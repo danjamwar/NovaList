@@ -1,0 +1,15 @@
+# Data editor backups (made every time you save in editor.html)
+backups/
+_backups/
+wh40k-11e-main/_backups/
+
+# Zips and temporary files
+*.zip
+*.tar.gz
+*.tmp
+*~
+
+# Operating system clutter
+Thumbs.db
+desktop.ini
+.DS_Store

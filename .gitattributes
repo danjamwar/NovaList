@@ -1,0 +1,13 @@
+# Keep line endings exactly as the program writes them (LF), so the data
+# editor's saves only show the lines you actually changed.
+*.json  text eol=lf
+*.js    text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+
+# Pictures are binary
+*.png   binary
+*.jpg   binary
