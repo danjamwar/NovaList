@@ -50,7 +50,7 @@
     if (dataDir) { try { appDataDir = await root.getDirectoryHandle('data', { create: true }); } catch (e) { appDataDir = null; } }
     else dataDir = root;
     const entries = await readDir(dataDir);
-    if (!entries.length) { toast('No BSData .json files found in that folder. Pick the "new recruit" folder or the wh40k-11e-main folder.', 7000); return false; }
+    if (!entries.length) { toast('No BSData .json files found in that folder. Pick the program folder (the one containing wh40k-11e-main) or the wh40k-11e-main folder itself.', 7000); return false; }
     S.dataDir = dataDir; S.appDataDir = appDataDir;
     // backups go next to wh40k-11e-main when the parent folder was chosen, otherwise inside it
     S.backupParent = dataDir === root ? dataDir : root;
@@ -290,7 +290,7 @@
     $('#main').innerHTML = `<div class="home"><section class="card">
       <h2>BSData editor</h2>
       <p>Edit the army data (points, stats, weapons, rules, options) in your <b>wh40k-11e-main</b> folder. Changes are written straight into the .json files, and the list builder's <code>data</code> folder is rebuilt automatically when you save.</p>
-      ${hasFS ? `<p class="muted">Click below and choose your <b>new recruit</b> folder (the one containing <code>wh40k-11e-main</code> and <code>index.html</code>). Your browser will ask to allow editing – click <b>Edit files / Allow</b>.</p>
+      ${hasFS ? `<p class="muted">Click below and choose the program folder – e.g. <b>NovaList</b> (the one containing <code>wh40k-11e-main</code> and <code>index.html</code>). Your browser will ask to allow editing – click <b>Edit files / Allow</b>.</p>
         ${prev ? `<button class="btn primary" data-act="reopen">Reopen “${esc(prev.name)}”</button> ` : ''}
         <button class="btn ${prev ? '' : 'primary'}" data-act="pick-folder">Choose folder…</button>`
       : `<p class="bad-note">This browser can't write to folders. Use <b>Chrome</b> or <b>Edge</b> for saving. You can still browse/edit here and download changed files.</p>

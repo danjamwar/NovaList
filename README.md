@@ -20,6 +20,10 @@ An offline army list builder and game companion for **Warhammer 40,000 (11th edi
 
 Your lists are saved in your web browser, not in the folder – use **Save file** to back them up or move them to another computer.
 
+### Offline and on tablets
+
+Opened from its web address (GitHub Pages), NovaList saves itself on the device the first time – the home screen shows **✓ Ready to use offline** – and then works with no internet. On Android use Chrome's **⋮ → Add to Home screen** to install it like an app.
+
 ## Folder layout
 
 | Path | What it is |

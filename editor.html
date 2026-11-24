@@ -6,6 +6,10 @@
 <title>BSData Editor – Offline List Builder</title>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/editor.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14161b">
+<link rel="icon" href="icons/app-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body class="editor">
 <header id="topbar">
@@ -20,5 +24,6 @@
 <script src="js/bsformat.js"></script>
 <script src="js/datacheck.js"></script>
 <script src="js/editor.js"></script>
+<script>if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register('sw.js').catch(() => {}); navigator.serviceWorker.ready.then(r => { if (r.active) r.active.postMessage('save-all'); }); }</script>
 </body>
 </html>

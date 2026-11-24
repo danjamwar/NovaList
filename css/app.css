@@ -393,3 +393,5 @@ td.dmg { color: #ff8f86 !important; font-weight: 700; }
 .fd-icon { width: 18px; height: 19px; object-fit: contain; vertical-align: middle; }
 .ul-name .fd-icon { width: 15px; height: 16px; }
 h4 .fd-icon { width: 20px; height: 21px; }
+.offline-status { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+.offline-status b { color: #a7e8c3; }

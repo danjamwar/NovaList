@@ -187,6 +187,7 @@
         <a class="btn" href="editor.html" style="text-decoration:none">✎ Edit data…</a>
         <button class="btn" data-act="load-folder">Load data folder…</button>
         ${E.Data.source === 'imported' ? '<button class="btn" data-act="reset-data">Use bundled data</button>' : ''}
+        <div id="offline-status" class="offline-status"></div>
       </section>
       <section class="card">
         <h2>Help</h2>
@@ -194,6 +195,25 @@
         <a class="btn primary" href="help.html" target="_blank">📖 Open the user guide</a>
       </section>
     </div>`;
+    offlineStatus();
+  }
+
+  // Offline: when opened from a web address the service worker (sw.js) saves everything on the device.
+  async function offlineStatus() {
+    const el = $('#offline-status'); if (!el) return;
+    if (!/^https?:$/.test(location.protocol)) { el.innerHTML = '✓ Works offline – you\'re running it from a folder on this computer.'; return; }
+    if (!('serviceWorker' in navigator) || !('caches' in window)) { el.innerHTML = 'This browser can\'t save the program for offline use.'; return; }
+    try {
+      const m = E.Data.manifest;
+      const want = [m.gameSystem, ...m.catalogues].map(f => 'data/' + f.file);
+      const c = await caches.open('novalist-v1');
+      const have = new Set((await c.keys()).map(r => decodeURIComponent(new URL(r.url).pathname)));
+      const base = decodeURIComponent(new URL('.', location.href).pathname);
+      const n = want.filter(f => have.has(base + f)).length;
+      if (!$('#offline-status')) return;
+      if (n >= want.length) el.innerHTML = '✓ <b>Ready to use offline</b> on this device – the program and all army data are saved. Open this page (or the home-screen icon) with no internet and it still works.';
+      else { el.innerHTML = `⏳ Saving for offline use… ${n} of ${want.length} army files. Keep this page open until it says Ready.`; setTimeout(offlineStatus, 2000); }
+    } catch (e) { el.textContent = 'Offline status unavailable (' + e.message + ').'; }
   }
 
   async function createRoster() {

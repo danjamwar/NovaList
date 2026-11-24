@@ -68,6 +68,10 @@ th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
   a { color: #000; text-decoration: none; }
 }
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14161b">
+<link rel="icon" href="icons/app-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
 <div class="wrap">
@@ -153,6 +157,13 @@ th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
   <li>You can move the folder anywhere (another drive, a USB stick) – it keeps working. Your lists stay in the browser either way.</li>
 </ul>
 <div class="tip">Bookmark the list builder in your browser, or pin it to your taskbar, so you can open it in one click.</div>
+<h3 id="online">Using it from the website, offline and on tablets</h3>
+<p>If you open NovaList from its web address (for example a GitHub Pages link) instead of from a folder, it saves itself on your device the first time: the home screen's <b>Game data</b> card shows <i>Saving for offline use…</i> and then <b>✓ Ready to use offline</b>. After that it opens and works with no internet connection – including on phones and tablets.</p>
+<ul>
+  <li><b>Install it like an app:</b> in Chrome on Android use <b>⋮ → Add to Home screen</b> (on a computer, the install icon in the address bar). It opens in its own window with a NovaList icon.</li>
+  <li><b>Updates:</b> whenever you're online it picks up the latest version automatically and saves that for offline use too.</li>
+  <li>Lists you make on the website are saved in that browser, separately from lists in a copy opened from a folder – use <a href="#savefile">Save file</a> and <a href="#import">Import list</a> to move them.</li>
+</ul>
 <p>You can come back to this guide at any time with the <span class="ui">?</span> button at the top right of the list builder, <span class="ui gold">📖 Open the user guide</span> on its home screen, or <span class="ui">? Help</span> in the data editor.</p>
 
 <!-- ============================================================ -->
@@ -562,5 +573,6 @@ th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
 <p class="top"><a href="#start">↑ Back to top</a></p>
 </main>
 </div>
+<script>if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register('sw.js').catch(() => {}); navigator.serviceWorker.ready.then(r => { if (r.active) r.active.postMessage('save-all'); }); }</script>
 </body>
 </html>
