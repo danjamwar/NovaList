@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Guide – Offline List Builder</title>
+<style>
+:root { --bg:#14161b; --panel:#1c1f26; --panel2:#232731; --line:#2e3340; --text:#e6e8ee; --muted:#9aa1b2; --accent:#d4a24c; --accent2:#f0c46a; --good:#4caf7a; --bad:#e0574f; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+a { color: var(--accent2); }
+.wrap { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+nav { position: sticky; top: 0; height: 100vh; overflow: auto; background: var(--panel); border-right: 1px solid var(--line); padding: 18px 14px 40px; font-size: 14px; }
+nav .brand { font-weight: 700; color: var(--accent); font-size: 17px; margin-bottom: 2px; }
+nav .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+nav ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+nav > ol > li { counter-increment: s; margin: 6px 0 2px; }
+nav > ol > li > a::before { content: counter(s) ". "; color: var(--muted); }
+nav a { color: var(--text); text-decoration: none; display: block; padding: 3px 8px; border-radius: 5px; }
+nav a:hover { background: var(--panel2); color: var(--accent2); }
+nav ol ol { padding-left: 14px; }
+nav ol ol a { color: var(--muted); font-size: 13px; padding: 2px 8px; }
+nav .back { display: inline-block; margin-top: 16px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 6px; }
+main { padding: 34px 48px 120px; max-width: 980px; }
+h1 { font-size: 30px; margin: 0 0 6px; }
+h1 + .lead { color: var(--muted); font-size: 17px; margin-top: 0; }
+h2 { font-size: 24px; margin: 56px 0 10px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--accent2); }
+h3 { font-size: 18.5px; margin: 32px 0 6px; }
+h4 { font-size: 16px; margin: 20px 0 4px; color: var(--accent2); }
+p, li { color: #d8dbe3; }
+ul, ol { padding-left: 22px; }
+li { margin: 3px 0; }
+b, strong { color: #fff; }
+kbd, .ui { display: inline-block; font: 600 13px/1.35 "Segoe UI", system-ui, sans-serif; background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; color: #fff; white-space: nowrap; }
+.ui.gold { background: var(--accent); color: #1a1408; border-color: var(--accent); }
+.ui.green { border-color: var(--good); color: #a7e8c3; }
+figure { margin: 16px 0 22px; }
+figure img { width: 100%; border: 1px solid var(--line); border-radius: 8px; display: block; }
+figcaption { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+.tip, .note, .warn { border-radius: 8px; padding: 10px 14px; margin: 14px 0; font-size: 15px; }
+.tip { background: #1d2a22; border: 1px solid #2f5a45; }
+.note { background: #1f2533; border: 1px solid #34406a; }
+.warn { background: #2a2416; border: 1px solid #6a5226; }
+.tip::before { content: "Tip: "; font-weight: 700; color: #a7e8c3; }
+.note::before { content: "Note: "; font-weight: 700; color: #c9d5ff; }
+.warn::before { content: "Careful: "; font-weight: 700; color: var(--accent2); }
+table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 15px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
+.steps { counter-reset: st; list-style: none; padding-left: 0; }
+.steps > li { counter-increment: st; position: relative; padding-left: 38px; margin: 10px 0; }
+.steps > li::before { content: counter(st); position: absolute; left: 0; top: 1px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #1a1408; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+.box h4 { margin-top: 2px; }
+.top { font-size: 13px; color: var(--muted); }
+@media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } nav { position: static; height: auto; } main { padding: 24px 18px 80px; } .cols { grid-template-columns: 1fr; } }
+@media print {
+  body { background: #fff; color: #000; font-size: 12pt; }
+  nav, .top { display: none; }
+  .wrap { display: block; } main { max-width: none; padding: 0; }
+  h2 { color: #000; break-before: page; border: none; } h4 { color: #000; }
+  p, li, td { color: #000; } b, strong { color: #000; }
+  .tip, .note, .warn, .box { background: #fff; border: 1px solid #999; }
+  kbd, .ui { background: #eee; color: #000; border-color: #999; }
+  figure { break-inside: avoid; } figure img { border-color: #999; }
+  a { color: #000; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">⚔ Offline List Builder</div>
+  <div class="sub">User Guide · Warhammer 40,000 11th edition</div>
+  <ol>
+    <li><a href="#start">Getting started</a></li>
+    <li><a href="#home">The home screen</a></li>
+    <li><a href="#build">Building a list</a>
+      <ol>
+        <li><a href="#layout">The screen layout</a></li>
+        <li><a href="#adding">Adding units</a></li>
+        <li><a href="#options">Choosing wargear &amp; options</a></li>
+        <li><a href="#leaders">Attaching Leaders</a></li>
+        <li><a href="#config">Detachments &amp; battle size</a></li>
+        <li><a href="#checks">Points &amp; list checks</a></li>
+        <li><a href="#datasheets">Datasheets &amp; gold values</a></li>
+        <li><a href="#managing">Renaming, copying, undo</a></li>
+      </ol></li>
+    <li><a href="#play">Play mode</a>
+      <ol>
+        <li><a href="#scoreboard">The scoreboard</a></li>
+        <li><a href="#reminders">Phase reminders</a></li>
+        <li><a href="#tracking">Tracking your units</a></li>
+        <li><a href="#reserves">Strategic reserves</a></li>
+        <li><a href="#battleshock">The Battle-shock step</a></li>
+        <li><a href="#scores">Score by round</a></li>
+        <li><a href="#gameend">End of the battle &amp; overtime</a></li>
+      </ol></li>
+    <li><a href="#share">Exporting, printing &amp; importing</a>
+      <ol>
+        <li><a href="#export">Export list</a></li>
+        <li><a href="#print">Print / PDF</a></li>
+        <li><a href="#savefile">Saving &amp; backing up lists</a></li>
+        <li><a href="#import">Importing a list</a></li>
+      </ol></li>
+    <li><a href="#data">Keeping the data up to date</a></li>
+    <li><a href="#editor">The data editor (advanced)</a>
+      <ol>
+        <li><a href="#ed-open">Opening your folder</a></li>
+        <li><a href="#ed-find">Finding things</a></li>
+        <li><a href="#ed-unit">The unit page</a></li>
+        <li><a href="#ed-points">The points table</a></li>
+        <li><a href="#ed-new">Adding a new unit</a></li>
+        <li><a href="#ed-det">Adding a new detachment</a></li>
+        <li><a href="#ed-lead">Leaders: “Can lead”</a></li>
+        <li><a href="#ed-strat">Adding stratagems</a></li>
+        <li><a href="#ed-check">Check data</a></li>
+        <li><a href="#ed-save">Saving &amp; backups</a></li>
+      </ol></li>
+    <li><a href="#faq">Troubleshooting &amp; FAQ</a></li>
+    <li><a href="#keys">Keyboard shortcuts</a></li>
+    <li><a href="#about">About the data</a></li>
+  </ol>
+  <a class="back" href="index.html">← Back to the list builder</a>
+</nav>
+
+<main>
+<h1>User Guide</h1>
+<p class="lead">Build Warhammer 40,000 army lists, check them against the rules, play games with them and share them – all without an internet connection.</p>
+
+<div class="cols">
+  <div class="box"><h4>Players</h4>Sections 1–5 cover everything you need: building a list, playing a game and sharing lists with other people and apps.</div>
+  <div class="box"><h4>Keeping the data right</h4>Sections 6–7 explain updating the army data and using the <b>data editor</b> to change points, stats, rules and add new units.</div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="start">1. Getting started</h2>
+<p>You're ready to go – everything runs from this folder on your computer, with no installation and no internet connection needed.</p>
+<h3>Your first list in four steps</h3>
+<ol class="steps">
+  <li>Go back to the <a href="index.html">list builder</a>'s home screen and choose your <b>Faction</b>, <b>Battle size</b> and a name, then click <span class="ui gold">Create roster</span> (<a href="#home">more on the home screen</a>).</li>
+  <li>Click <b>Detachment</b> under <i>Configuration</i> on the left and pick your detachment (<a href="#config">details</a>).</li>
+  <li>Add units from the <b>Add unit</b> list in the middle, and choose their wargear (<a href="#adding">adding units</a>, <a href="#options">options</a>).</li>
+  <li>Keep an eye on the top bar – it shows your points and turns to <span class="ui green">✓ Valid</span> when the list is legal (<a href="#checks">list checks</a>).</li>
+</ol>
+<p>When you're ready to play, press <span class="ui green">▶ Play</span> (<a href="#play">Play mode</a>). To send your list to someone, use <span class="ui">Export list</span> (<a href="#export">Exporting</a>).</p>
+<h3>Good to know</h3>
+<ul>
+  <li><b>Your lists save automatically – in your web browser</b>, not in the folder. They'll be there every time you open the program in the same browser. To move lists to another browser or computer, or to keep a backup, use <a href="#savefile">Save file</a> and <a href="#import">Import list</a>.</li>
+  <li><b>Chrome</b> or <b>Edge</b> work best. The <a href="#editor">data editor</a> needs one of them to save changes.</li>
+  <li>You can move the folder anywhere (another drive, a USB stick) – it keeps working. Your lists stay in the browser either way.</li>
+</ul>
+<div class="tip">Bookmark the list builder in your browser, or pin it to your taskbar, so you can open it in one click.</div>
+<p>You can come back to this guide at any time with the <span class="ui">?</span> button at the top right of the list builder, <span class="ui gold">📖 Open the user guide</span> on its home screen, or <span class="ui">? Help</span> in the data editor.</p>
+
+<!-- ============================================================ -->
+<h2 id="home">2. The home screen</h2>
+<figure><img src="help/home.jpg" alt="Home screen"><figcaption>The home screen: create a new list, open saved lists, import lists, manage the game data and open this guide.</figcaption></figure>
+<h3>Creating a list</h3>
+<ol class="steps">
+  <li>Choose your <b>Faction</b>.</li>
+  <li>Type a <b>Roster name</b> (optional – you can change it later).</li>
+  <li>Pick the <b>Battle size</b>: Incursion (1000 pts), Strike Force (2000 pts) or Onslaught (3000 pts).</li>
+  <li>Pick the <b>Force type</b>: <i>Army Roster</i> for normal matched play, <i>Crusade Force</i> or <i>Boarding Actions</i>.</li>
+  <li>Click <span class="ui gold">Create roster</span>.</li>
+</ol>
+<h3>Saved rosters</h3>
+<p>Every list you've made appears under <b>Saved rosters</b>, newest first, showing the faction, points and when it was last changed. Click a list to open it. The small buttons on the right of each list:</p>
+<table>
+  <tr><th>Button</th><th>What it does</th></tr>
+  <tr><td><span class="ui">⧉</span></td><td>Makes a copy of the list (handy for trying variations).</td></tr>
+  <tr><td><span class="ui">⭳</span></td><td>Saves the list as a file on your computer (see <a href="#savefile">Saving &amp; backing up</a>).</td></tr>
+  <tr><td><span class="ui">✕</span></td><td>Deletes the list (it asks first).</td></tr>
+</table>
+<p><span class="ui gold">Import list…</span> brings in a list from text, a New Recruit / BattleScribe file or a file saved by this program – see <a href="#import">Importing a list</a>.</p>
+<h3>Game data</h3>
+<p>The bottom card shows which army data the program is using and has buttons for <span class="ui">✎ Edit data…</span> (opens the <a href="#editor">data editor</a>) and <span class="ui">Load data folder…</span> (see <a href="#data">Keeping the data up to date</a>).</p>
+<h3>Help</h3>
+<p>The <span class="ui gold">📖 Open the user guide</span> button underneath opens this guide.</p>
+
+<!-- ============================================================ -->
+<h2 id="build">3. Building a list</h2>
+<h3 id="layout">The screen layout</h3>
+<figure><img src="help/add.jpg" alt="List builder layout"><figcaption>A new list: your army on the left, the “Add unit” list in the middle, and a summary on the right.</figcaption></figure>
+<table>
+  <tr><th>Area</th><th>What's there</th></tr>
+  <tr><td><b>Top bar</b></td><td>The list name (click to rename), total points, Detachment Points, Enhancements used, the <a href="#checks">list check</a>, undo/redo, <span class="ui green">▶ Play</span>, <span class="ui">Export list</span>, <span class="ui">Print / PDF</span>, <span class="ui">Save file</span> and <span class="ui">?</span> (this guide). On smaller screens some labels are shortened – e.g. <b>DP</b> for Detachment Points and <b>Export</b> / <b>Print</b>.</td></tr>
+  <tr><td><b>Left column</b></td><td>Your army, grouped by section (Configuration, Character, Battleline…). Click any entry to edit it. Notes for the list sit at the bottom.</td></tr>
+  <tr><td><b>Middle column</b></td><td>Either the <b>Add unit</b> list, or the options for the unit you've selected.</td></tr>
+  <tr><td><b>Right column</b></td><td>The selected unit's <a href="#datasheets">datasheet</a>, or – when no unit is selected – a summary of the whole list with your detachment rules and enhancements.</td></tr>
+</table>
+
+<h3 id="adding">Adding units</h3>
+<ol class="steps">
+  <li>Click <span class="ui gold">＋ Add unit</span> on the left (the Add unit list also shows whenever no unit is selected).</li>
+  <li>Type in the <b>search box</b>, or click a <b>category</b> chip (Character, Battleline, Vehicle…) to narrow the list. Points are shown next to each unit; a <span class="ui">×2</span> badge shows how many you already have.</li>
+  <li>Click a unit to add it. It's added with its default models and wargear, and opens so you can change its options.</li>
+</ol>
+<h4>Show: Legends, Crucible, Allies</h4>
+<p>Above the categories, the <b>Show</b> tick boxes control what appears in the Add unit list:</p>
+<ul>
+  <li><b>Legends</b> and <b>Crucible</b> units are hidden until you tick them (this setting is saved with each list).</li>
+  <li><b>Allies</b> (Titans, Imperial Agents, etc.) are shown until you untick it (this setting is remembered for all lists).</li>
+  <li><b>More…</b> opens the full set of show/hide switches from the data (Titans, Unaligned Forces, Crusade content and more).</li>
+</ul>
+<div class="note">These switches only affect what you can <i>add</i> – units already in your list are never removed.</div>
+
+<h3 id="options">Choosing wargear &amp; options</h3>
+<figure><img src="help/options.jpg" alt="Unit options"><figcaption>A unit's options in the middle column, with its datasheet on the right.</figcaption></figure>
+<p>When a unit is selected, its choices appear in the middle column. The kind of control tells you what's allowed:</p>
+<table>
+  <tr><th>Control</th><th>Meaning</th></tr>
+  <tr><td>◉ round button</td><td>Pick <b>one</b> from the group (e.g. a weapon choice). Picking another replaces it.</td></tr>
+  <tr><td>☑ tick box</td><td>Take it or not – at most one (Warlord, enhancements, relics). A greyed-out tick means it's required.</td></tr>
+  <tr><td><span class="ui">− 10 +</span> counter</td><td>Choose how many (e.g. models in the unit). The small grey text on the right shows the allowed range, e.g. <code>≤20</code> or <code>5–10</code>.</td></tr>
+  <tr><td><span class="ui">ⓘ</span></td><td>Shows that option's rule text without selecting it.</td></tr>
+</table>
+<ul>
+  <li><b>Groups</b> (such as “10-20 Warriors” or “Weapons”) show how many you've picked and the limits, e.g. <code>11/20 (min 10)</code>. Red means you're outside the limit. Click a group heading to fold it away.</li>
+  <li>Options with points show their cost on the right, e.g. <code>+20</code>.</li>
+  <li>When you pick a <b>detachment</b> or an <b>enhancement</b>, its rules appear underneath it automatically.</li>
+  <li>The <b>×11</b> next to weapons means “one each for all 11 models”.</li>
+</ul>
+<p>Click <span class="ui">Done</span> (or <span class="ui gold">＋ Add unit</span>) when you've finished with a unit.</p>
+
+<h3 id="leaders">Attaching Leaders</h3>
+<figure><img src="help/unit.jpg" alt="Leader attached"><figcaption>An Overlord attached to Necron Warriors, as Warlord with an enhancement. On the left, the Overlord is shown under the unit he leads.</figcaption></figure>
+<ol class="steps">
+  <li>Add both the character and the unit you want them to lead.</li>
+  <li>Select the character. At the top of its options there's a <b>Leader</b> (or <b>Supported by</b>) drop-down.</li>
+  <li>Choose the unit. Only units that character is allowed to join are listed; if a unit already has a Leader it says “(with …)”.</li>
+</ol>
+<p>The character then appears indented under that unit on the left, with the combined points (“Attached unit · 300 pts”). Rules that depend on attachments – like extra keywords for the unit – are applied automatically. The list check warns you if you put two Leaders on a unit that only allows one, or forget to attach a character that <i>must</i> be attached. To detach, choose “— not attached —”.</p>
+
+<h3 id="config">Detachments, battle size &amp; configuration</h3>
+<figure><img src="help/detachment.jpg" alt="Detachment choice"><figcaption>Choosing detachments. The selected detachment's rule is shown in full; use ⓘ to read any other detachment's rule.</figcaption></figure>
+<p>The <b>Configuration</b> section at the top of your army holds the list-wide choices. Click one to change it:</p>
+<ul>
+  <li><b>Detachment</b> – tick the detachment(s) you're using. In 11th edition each detachment costs <b>Detachment Points</b> – the cost is shown in blue next to each detachment (e.g. <span style="color:#9ec3ff">2 DP</span>), and next to your chosen detachments on the left. The top bar shows how many you've used out of your limit.</li>
+  <li><b>Battle Size</b> – sets your points limit, Detachment Points and enhancement limits. For a custom game, tick <i>Override points limit?</i> and set your own <b>Points limit</b>; a <b>Detachment Points limit</b> box also appears so you can set how many Detachment Points you get (it starts at the battle size's amount – <i>Use battle size limit</i> puts it back). Unticking the override returns to the normal limits.</li>
+  <li><b>Force Disposition</b> – your force disposition choice. Each detachment shows icons for the force dispositions it gives you (e.g. <img src="icons/PurgeTheFoe.png" alt="" style="width:16px;vertical-align:middle"> Purge the Foe, <img src="icons/TakeAndHold.png" alt="" style="width:16px;vertical-align:middle"> Take and Hold, <img src="icons/PriorityAssets.png" alt="" style="width:16px;vertical-align:middle"> Priority Assets, <img src="icons/Reconnaissance.png" alt="" style="width:16px;vertical-align:middle"> Reconnaissance, <img src="icons/Disruption.png" alt="" style="width:16px;vertical-align:middle"> Disruption) – next to it in the detachment list, under Configuration on the left and in the army rules. Hover an icon to see its name.</li>
+  <li><b>Show/Hide Options</b> – the data's show/hide switches (the same ones as <i>More…</i> in the Add unit list).</li>
+</ul>
+
+<figure><img src="help/dpoverride.jpg" alt="Override points limit"><figcaption>A custom game: <i>Override points limit?</i> is ticked, with a 500 pts limit and the Detachment Points limit raised to 4.</figcaption></figure>
+<h3 id="checks">Points &amp; list checks</h3>
+<figure><img src="help/issues.jpg" alt="List issues"><figcaption>The list check found a problem: two detachments cost 5 Detachment Points but the limit is 3.</figcaption></figure>
+<p>The program checks your list against the rules in the data as you build. The top bar shows:</p>
+<ul>
+  <li><b>Points</b>, e.g. <code>460 / 2000 pts</code> – red if you're over the limit.</li>
+  <li><b>Detachment Points</b> and <b>Enhancements</b> used, out of your limits.</li>
+  <li><span class="ui green">✓ Valid</span> when everything is fine, or <span class="ui" style="color:#ffb3ae;border-color:#e0574f">⚠ 1 issue</span> when there's a problem. Click it to see the list of issues; click an issue to jump to the unit. Units with problems have a red edge on the left, and the problem is also shown at the top of the unit's options.</li>
+</ul>
+<p>Things that are checked include: points limit, minimum and maximum unit sizes and wargear, how many of each unit you can take for your battle size (e.g. 2 of each in Incursion, 3 in Strike Force, double for Battleline and Dedicated Transports, 1 of each Epic Hero), unique characters, that you've chosen a Warlord, Detachment Points, enhancement limits (including only one per attached unit) and Leader attachments.</p>
+
+<h3 id="datasheets">Datasheets &amp; gold values</h3>
+<p>The right-hand column shows the selected unit's datasheet: its stats, weapons (with how many of each), abilities, rules (click a rule name to read it), keywords and what it's attached to.</p>
+<p>Values shown in <b style="color:var(--accent2)">gold</b> have been changed by something in your list – wargear, an enhancement, an attached character or your detachment. For example, an enhancement that gives +1 Strength shows the new Strength in gold, and new weapon keywords appear in gold. A small tag next to a weapon's name shows what changed it. Hover over a gold value to see what it was before.</p>
+<div class="note">These changes are for display only – they never change your points or the list check.</div>
+<p>With no unit selected (click <span class="ui">Done</span>), the right-hand column shows a text summary of the whole list, followed by <b>Army &amp; detachment rules</b> and the <b>Enhancements</b> you've taken (who has them and their cost).</p>
+<figure><img src="help/summary.jpg" alt="List summary"><figcaption>The list summary with your detachment rules and enhancements.</figcaption></figure>
+
+<h3 id="managing">Renaming, copying, removing &amp; undo</h3>
+<ul>
+  <li><b>Rename the list:</b> click its name in the top bar and type.</li>
+  <li><b>Give a unit a nickname:</b> select it and click <span class="ui">Rename</span> (e.g. “Squad Ares”). The real name still shows alongside.</li>
+  <li><b>Copy a unit:</b> <span class="ui">⧉</span> next to it on the left. <b>Remove a unit:</b> <span class="ui">✕</span>.</li>
+  <li><b>Undo / redo:</b> the <span class="ui">↶</span> <span class="ui">↷</span> buttons, or <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>.</li>
+  <li><b>Notes:</b> the box at the bottom left – handy for reminders or tactics. Notes are included in exports.</li>
+</ul>
+<p>Everything is saved automatically as you go.</p>
+
+<!-- ============================================================ -->
+<h2 id="play">4. Play mode</h2>
+<p>Play mode turns your list into a read-only game companion – your list can't be changed by accident while you play. Open a list and click <span class="ui green">▶ Play</span> in the top bar.</p>
+<figure><img src="help/play.jpg" alt="Play mode"><figcaption>Play mode in your Shooting phase: the scoreboard at the top, your units on the left, and the phase reminders, tracker and datasheet for the selected unit on the right.</figcaption></figure>
+
+<h3 id="scoreboard">The scoreboard</h3>
+<ul>
+  <li><b>You</b> and <b>Opponent</b> each have <b>CP</b>, <b>Primary</b> and <b>Secondary</b> VP counters with big <span class="ui">−</span> <span class="ui">+</span> buttons, and a VP total. Click “Opponent” to type their name. The player whose turn it is gets a gold outline.</li>
+  <li><b>Battle round</b> with <span class="ui">−</span> <span class="ui">+</span>.</li>
+  <li><b>Whose turn</b> – click it to switch. (If your opponent goes first, click it before you start.)</li>
+  <li><b>Phases</b> – Command, Movement, Shooting, Charge, Fight. Click one to jump to it, or press <span class="ui gold">Next phase ▸</span>. After the Fight phase it passes the turn to the other player, and after both players' turns it starts the next battle round.</li>
+  <li><span class="ui">+1 CP each</span> appears in the Command phase – both players gain 1 CP.</li>
+</ul>
+<h3 id="scores">Score by round</h3>
+<p>Every Primary and Secondary VP you add is recorded against the current battle round. <span class="ui">📊 Scores</span> in the top bar shows a table of what each player scored in each round, with each round's total and the <b>running score</b> (e.g. <i>12 – 15</i>). The current round is highlighted. If you add VP by mistake, press <span class="ui">−</span> on the scoreboard – it comes off the current round (or use <span class="ui">↶ Undo</span>). The same table appears in the end-of-battle results.</p>
+<figure><img src="help/scores.jpg" alt="Score by round"><figcaption>The score by round during battle round 4 – the current round is highlighted.</figcaption></figure>
+
+<h3 id="gameend">The end of the battle &amp; overtime</h3>
+<figure><img src="help/gameend.jpg" alt="Battle over"><figcaption>The results at the end of battle round 5, with the score for each round.</figcaption></figure>
+<p>A normal game lasts five battle rounds. In the last phase of round 5 the button changes to <span class="ui gold">End battle 🏁</span>. Pressing it shows the <b>results</b>: the score for each round, each player's Primary, Secondary and total VP, and who won (or a draw).</p>
+<ul>
+  <li><span class="ui">＋ Play an overtime round</span> carries on into round 6 (marked <b>Overtime</b>). At the end of an overtime round you get the results again, with the option of another one.</li>
+  <li><span class="ui gold">Finish game</span> closes the results. A <b>Game over</b> banner stays at the top with the final score; you can still adjust scores, reopen the results, or start an overtime round from there.</li>
+  <li><span class="ui">↶ Undo</span> takes you back to the Fight phase if you ended the battle by mistake.</li>
+</ul>
+
+<h3 id="reminders">Phase reminders</h3>
+<p>At the top of the right-hand side, a <b>📋 phase reminders</b> box lists everything in your army that happens in the current phase – for example <i>Reanimation Protocols</i> at the end of your Command phase, or an ability used "at the start of your Shooting phase". It follows the scoreboard, so it changes as you press <span class="ui gold">Next phase ▸</span> and shows different things in your turn and your opponent's turn.</p>
+<ul>
+  <li>Reminders are grouped into <b>Army &amp; detachment</b> rules, <b>Unit abilities</b>, <b>Rules</b> (such as Heavy or Deep Strike) and <b>Any phase</b> (abilities usable "at the start of any phase"), with the units that have them. Things that happen at the start of the battle round show in the first player's Command phase (and "at the start of the first battle round" only in round 1); things at the end of the battle round show in the second player's Fight phase.</li>
+  <li>The part of the text that mentions the phase is highlighted. Click a reminder to see its full text.</li>
+  <li>Destroyed units drop off the list. Click the box's heading to hide or show it.</li>
+</ul>
+<div class="note">Reminders are found by reading the rules text, so an ability that only says "when this unit is selected to shoot" (without naming the phase) won't appear. Stratagems aren't included unless you've added them to your detachment with the data editor.</div>
+
+<h3 id="tracking">Tracking your units</h3>
+<p>The left column lists your units. Leaders appear on the same card as the unit they lead. Each card shows models or wounds left, turns gold when the unit is <b>at or below half-strength</b>, shows its markers, and moves to a <b>Destroyed</b> section at the bottom when it's wiped out.</p>
+<p>Click a unit to open its tracker and datasheet. For each kind of model in the unit:</p>
+<table>
+  <tr><th>Button</th><th>What it does</th></tr>
+  <tr><td><span class="ui">−1 wound</span></td><td>Takes a wound off the damaged model. When it runs out of wounds, that model is removed and the next one starts fresh.</td></tr>
+  <tr><td><span class="ui">−1 model</span></td><td>Removes a whole model.</td></tr>
+  <tr><td><span class="ui">＋</span></td><td>Heals the damaged model, or brings a model back.</td></tr>
+  <tr><td>Red dots</td><td>For models with several wounds: tap a dot to set how many wounds the damaged model has left.</td></tr>
+  <tr><td><span class="ui">Destroyed</span></td><td>Marks the whole unit as destroyed in one go.</td></tr>
+</table>
+<h4>Damaged models</h4>
+<p>Big models such as vehicles, monsters and characters like Mortarion often have a <b>Damaged</b> ability – for example "Damaged: 1-6 wounds remaining – subtract 1 from the Hit roll". When you take the model down into that range, play mode applies it for you: a red <b>⚠ Damaged</b> banner appears on its datasheet, the affected values are shown in red (<b>BS/WS</b> shown as the roll now needed – e.g. 3+ becomes 4+ for "subtract 1 from the Hit roll", never worse than 6+ since an unmodified 6 always hits – the reduced <b>OC</b>, or halved <b>Attacks</b>; hover a red value to see the normal one), and the unit gets a <b>Damaged</b> tag in the list. Heal it back above the range and everything returns to normal. Anything else the ability says (such as "you can only select one ability") is shown as text in the banner.</p>
+<p>Below that are the <b>markers</b>: <i>Battle-shocked, Advanced, Fell Back, Shot, Charged, Fought</i>. Tap to switch them on (gold) or off. For a Leader and their unit, the markers are shared by the whole unit.</p>
+<ul>
+  <li><b>Advanced, Fell Back, Shot, Charged</b> and <b>Fought</b> clear automatically at the end of each turn.</li>
+  <li><b>Battle-shocked</b> never clears by itself – see the next section.</li>
+  <li><b>Once per battle</b> abilities found in the unit's rules get their own buttons – tap to cross them off when used.</li>
+</ul>
+<p><span class="ui">📜 Army &amp; detachment rules</span> at the top of the unit list shows your detachment rules and enhancements.</p>
+<h4>Wound roll reminder</h4>
+<p><span class="ui">🎲 Wound roll</span> in the top bar opens the wound roll table from the core rules (unmodified 1 fails, unmodified 6 is a critical wound, and the Strength vs Toughness chart). Set the attack's <b>Strength</b> and the target's <b>Toughness</b> at the bottom and the matching row is highlighted, with the number needed (e.g. <b>Wounds on 3+</b>). Close it with ✕ or by clicking outside it.</p>
+<figure><img src="help/wound.jpg" alt="Wound roll"><figcaption>The wound roll reminder: Strength 5 against Toughness 4 wounds on a 3+.</figcaption></figure>
+
+<h3 id="reserves">Strategic reserves</h3>
+<figure><img src="help/reserves.jpg" alt="Strategic reserves"><figcaption>Before the battle: Canoptek Wraiths have been put in strategic reserves (95 of the 1000 pts allowed). The phase reminders box is above it.</figcaption></figure>
+<p>Before you press <span class="ui gold">Next phase ▸</span> for the first time, a <b>🛬 Strategic reserves – before the battle</b> box lets you choose which units start in reserves. It adds up their points against the limit (50% of your points limit) and warns you if you go over. <b>Aircraft</b> are put in reserves automatically, and units with <b>Deep Strike</b> are labelled.</p>
+<ul>
+  <li><b>Round 1:</b> units in reserves can't arrive yet.</li>
+  <li><b>Your Movement phase from round 2:</b> the box lists your units in reserves with the ingress move rules (within 6" of a battlefield edge, more than 8" from enemy units, not in your opponent's deployment zone before round 3, or anywhere more than 8" away for Deep Strike). Press <span class="ui gold">Arrived ✓</span> when a unit comes on.</li>
+  <li><b>Your opponent's Movement phase:</b> a <b>Rapid Ingress</b> reminder lets one unit (not Aircraft) arrive for 1 CP – <span class="ui gold">Arrived (−1 CP)</span> takes the CP off for you.</li>
+  <li><b>End of battle round 3:</b> units that never arrived are marked destroyed (Undo reverses this). Units you put back into reserves during the battle aren't affected.</li>
+  <li><b>Aircraft</b> on the battlefield go back into reserves automatically at the end of your opponent's turn.</li>
+</ul>
+<h4>Units embarked in a transport</h4>
+<p>Use the <b>Embarked in…</b> drop-down (in the before-the-battle box, or in a unit's tracker) to put a unit inside one of your transports. Embarked units are listed under their transport, and the transport's tracker shows its capacity and what's inside.</p>
+<ul>
+  <li>Units embarked in a transport that's in strategic reserves count towards the 50% reserves limit, and arrive with it.</li>
+  <li>If the transport never arrives, it and everything inside are destroyed at the end of battle round 3.</li>
+  <li><span class="ui">Disembark</span> puts the unit on the battlefield. Embarked units don't take Battle-shock tests.</li>
+</ul>
+<p>You can also move any unit in or out of reserves with the <b>Location</b> buttons in its tracker. Units in reserves are listed separately on the left, and don't appear in the Battle-shock step.</p>
+
+<h3 id="battleshock">The Battle-shock step</h3>
+<figure><img src="help/battleshock.jpg" alt="Battle-shock step"><figcaption>In your Command phase, the Battle-shock step lists every unit that must take a Battle-shock test.</figcaption></figure>
+<p>During <b>your</b> Command phase, a <b>Battle-shock step</b> panel appears at the top. It lists every unit that is battle-shocked or at/below half-strength, with its Leadership. Roll 2D6 for each, then press:</p>
+<ul>
+  <li><span class="ui" style="color:#a7e8c3;border-color:var(--good)">Passed</span> – the unit is no longer battle-shocked.</li>
+  <li><span class="ui" style="color:#ffb3ae;border-color:var(--bad)">Failed</span> – the unit is battle-shocked.</li>
+</ul>
+<p>If you press the wrong one, click <span class="ui">change</span>. The heading counts how many units are still to test.</p>
+
+<h3>Undo, new game &amp; exit</h3>
+<ul>
+  <li><span class="ui">↶ Undo</span> reverses your last change in the game.</li>
+  <li>The game <b>saves itself</b> – you can close the browser mid-game and carry on later from the same list.</li>
+  <li><span class="ui">New game</span> clears all wounds, scores and markers.</li>
+  <li><span class="ui gold">✕ Exit play mode</span> goes back to editing your list.</li>
+</ul>
+<div class="note">Play mode tracks <i>your</i> units only. Your opponent's scores and CP are tracked, but not their units.</div>
+
+<!-- ============================================================ -->
+<h2 id="share">5. Exporting, printing &amp; importing</h2>
+<h3 id="export">Export list</h3>
+<figure><img src="help/export.jpg" alt="Export list"><figcaption>Export list, in the GW app format.</figcaption></figure>
+<p>Click <span class="ui">Export list</span> in the top bar and choose a format:</p>
+<table>
+  <tr><th>Format</th><th>Use it for</th></tr>
+  <tr><td><b>GW app</b></td><td>The standard layout used by the Warhammer 40,000 app, New Recruit and most events. Paste it into messages, forums or event websites.</td></tr>
+  <tr><td><b>WTC / tournament</b></td><td>The compact “+++” format many tournament organisers ask for (warlord, enhancements and unit lines with Char1, Char2…).</td></tr>
+  <tr><td><b>Simple</b></td><td>This program's own easy-to-read summary, including which characters are attached to which unit.</td></tr>
+</table>
+<p>Click <span class="ui">Copy</span> to copy it, or <span class="ui">Download .txt</span> to save it as a text file.</p>
+
+<h3 id="print">Print / PDF</h3>
+<p><span class="ui">Print / PDF</span> prints your whole list: the summary, a page with your detachment rules and enhancements, a datasheet for every unit (with modified values underlined), and a <b>rules reference</b> at the end with every weapon keyword and special rule your army uses. To make a PDF, choose <b>Save as PDF</b> (or <i>Microsoft Print to PDF</i>) as the printer.</p>
+
+<h3 id="savefile">Saving &amp; backing up lists</h3>
+<p><span class="ui">Save file</span> (top bar) – or <span class="ui">⭳</span> on the home screen – saves a list as a <code>.roster.json</code> file. Use it to:</p>
+<ul>
+  <li><b>Back up</b> your lists (browser data can be lost if you clear your browsing history).</li>
+  <li><b>Move</b> lists to another browser or computer.</li>
+  <li><b>Share</b> a list with someone else who has this program – it keeps everything exactly, including attachments, nicknames and notes.</li>
+</ul>
+<p>To open one, use <span class="ui gold">Import list…</span> → <b>This app's roster file</b>.</p>
+
+<h3 id="import">Importing a list</h3>
+<figure><img src="help/import.jpg" alt="Import list"><figcaption>Pasting a list exported from another app.</figcaption></figure>
+<p>On the home screen click <span class="ui gold">Import list…</span> and choose a tab:</p>
+<table>
+  <tr><th>Tab</th><th>What it accepts</th></tr>
+  <tr><td><b>Paste list text</b></td><td>Text exported from the Warhammer 40,000 app, New Recruit (normal or WTC format) or this program. The faction is detected automatically, or you can pick it. Units and wargear are matched by name – small spelling mistakes are fixed, and models named differently from the data are worked out from their wargear.</td></tr>
+  <tr><td><b>BattleScribe / New Recruit file</b></td><td><code>.rosz</code> or <code>.ros</code> roster files. These are matched exactly, because they use the same data as this program.</td></tr>
+  <tr><td><b>This app's roster file</b></td><td><code>.roster.json</code> files made with <a href="#savefile">Save file</a>.</td></tr>
+</table>
+<figure><img src="help/import-report.jpg" alt="Import report"><figcaption>After importing, a report shows anything that needs your attention.</figcaption></figure>
+<p>After importing, a report tells you:</p>
+<ul>
+  <li><b>Couldn't match</b> – items it couldn't find (often things that no longer exist in 11th edition, or a typo too big to guess). Add them by hand if needed.</li>
+  <li><b>Points differ</b> – units whose points in the imported list don't match this program's data. Usually the list was made with an older or newer points update.</li>
+  <li>Notes about guesses it made, such as a spelling it corrected.</li>
+</ul>
+<div class="note">Text lists don't record which unit a Leader is attached to, so after importing text, set attachments on each character. (Roster files and this program's own files keep them.)</div>
+
+<!-- ============================================================ -->
+<h2 id="data">6. Keeping the data up to date</h2>
+<p>All the units, points and rules come from the community <b>BSData</b> project's Warhammer 40,000 11th edition files, which sit in the <code>wh40k-11e-main</code> folder. The program reads a prepared copy of them from the <code>data</code> folder.</p>
+<p>When BSData releases fixes or a new points update, you can update in one of three ways:</p>
+<div class="cols">
+  <div class="box"><h4>Easiest: Load data folder</h4>Download the new BSData files, then on the home screen click <span class="ui">Load data folder…</span> and choose the folder with the <code>.json</code> files. The new data is stored in your browser and used straight away. <span class="ui">Use bundled data</span> switches back to the program's own <code>data</code> folder.</div>
+  <div class="box"><h4>For everyone who uses this folder</h4>Replace the <code>.json</code> files in <code>wh40k-11e-main</code> and run <code>build_data.py</code> (needs Python), which rebuilds the <code>data</code> folder. Or open the folder in the <a href="#editor">data editor</a> and save any change – the <code>data</code> folder is rebuilt automatically.</div>
+</div>
+<div class="warn">Copying new BSData files over <code>wh40k-11e-main</code> replaces any edits you've made with the data editor. Keep a copy of your edited files, or use the editor's <a href="#ed-save">Backups</a>.</div>
+
+<!-- ============================================================ -->
+<h2 id="editor">7. The data editor (advanced)</h2>
+<p>The data editor lets you fix and update the army data yourself: change points, stats, weapons and rules, add options, and add brand-new units. Most players never need it.</p>
+<div class="warn">The editor changes the real data files. Every save keeps a backup, but it's wise to make a copy of the whole folder before big changes.</div>
+
+<h3 id="ed-open">Opening your folder</h3>
+<figure><img src="help/editor-start.jpg" alt="Editor start"><figcaption>The data editor's start screen.</figcaption></figure>
+<ol class="steps">
+  <li>Open <code>editor.html</code> in <b>Chrome</b> or <b>Edge</b> – or click <span class="ui">✎ Edit data…</span> on the list builder's home screen.</li>
+  <li>Click <span class="ui gold">Choose folder…</span> and select the program's folder (the one containing <code>index.html</code> and <code>wh40k-11e-main</code>).</li>
+  <li>When the browser asks, click <b>Edit files</b> / <b>Allow</b>.</li>
+</ol>
+<p>Next time, a <span class="ui">Reopen “…”</span> button takes you straight back in. If you've moved the folder, use Choose folder again.</p>
+
+<h3 id="ed-find">Finding things</h3>
+<ul>
+  <li><b>Search all files by name</b> (left, top): type a unit, weapon, rule or enhancement name. Each result says what it is and which file it's in.</li>
+  <li><b>Browse a file:</b> pick a faction from the drop-down. Units are under <b>Units / root entries (links)</b>; other sections hold shared wargear, profiles, rules and keywords. Use <b>Filter this file…</b> to narrow the tree, and the ▸ arrows to look inside entries.</li>
+</ul>
+<div class="note">In the faction files, most units are a <b>link</b> to the full unit stored in a library file. When you open a unit, the editor shows the link at the top and the full unit (with its points, stats and options) underneath, so you can edit everything on one page.</div>
+
+<h3 id="ed-unit">The unit page</h3>
+<figure><img src="help/editor-unit.jpg" alt="Editor unit page"><figcaption>Editing Necron Warriors: points (including the price for 11+ models), stats and abilities.</figcaption></figure>
+<p>A unit's page is split into sections you can open and close:</p>
+<table>
+  <tr><th>Section</th><th>What you can change</th></tr>
+  <tr><td><b>Basics</b></td><td>Name, type (unit / model / upgrade), hidden.</td></tr>
+  <tr><td><b>Points &amp; costs</b></td><td>The points value, plus <b>points changes</b> such as “set to 190 when the unit has 11 or more models”. <i>Add a points change for larger unit size</i> creates a new one.</td></tr>
+  <tr><td><b>Profiles</b></td><td>Stat lines (M, T, Sv, W, Ld, OC…), weapon profiles and ability text. Add or remove profiles.</td></tr>
+  <tr><td><b>Rules</b></td><td>Rules written directly on the unit.</td></tr>
+  <tr><td><b>Options / contents</b></td><td>The models and wargear choices inside the unit: open, reorder, delete, add a new option or group, or link an existing piece of wargear.</td></tr>
+  <tr><td><b>Limits – min/max</b></td><td>How many of something are allowed (per unit, per army, etc.), with a plain-English description of each limit.</td></tr>
+  <tr><td><b>Modifiers</b></td><td>Rules that change things under conditions (e.g. points by unit size, hiding an option unless a detachment is chosen). Each shows a readable summary; complex ones have a <span class="ui">JSON</span> button.</td></tr>
+  <tr><td><b>Can lead / attach to</b></td><td>For characters – see <a href="#ed-lead">Leaders</a>.</td></tr>
+  <tr><td><b>Categories / keywords</b></td><td>The unit's keywords. The <b>Primary</b> one decides which section of the army list it appears in (Character, Battleline…).</td></tr>
+  <tr><td><b>Linked rules &amp; profiles</b></td><td>Shared rules and abilities the unit uses (e.g. weapon keyword rules).</td></tr>
+  <tr><td><b>Used by</b></td><td>Everywhere this item is linked from.</td></tr>
+  <tr><td><b>Advanced – raw JSON</b></td><td>The underlying data, for anything the forms don't cover.</td></tr>
+</table>
+<p>Use <span class="ui">⧉ Duplicate</span> and <span class="ui">🗑 Delete</span> at the top of the page to copy or remove the item.</p>
+
+<h3 id="ed-points">The points table</h3>
+<figure><img src="help/editor-points.jpg" alt="Points table"><figcaption>The points table: every unit in a faction with its points and unit-size price changes. Edited values are highlighted.</figcaption></figure>
+<p>For points updates, choose a faction and click <span class="ui gold">💲 Points table</span>. Every unit is listed with its points and any price changes for bigger units; enhancements and other paid upgrades are listed underneath. Type new values straight in – changed values turn gold (hover to see the old value). Use <b>Filter units…</b>, <b>Hide Legends</b> and <b>Hide Crucible</b> to shorten the list. The <span class="ui">＋</span> at the end of a row adds a unit-size price change.</p>
+
+<h3 id="ed-new">Adding a new unit</h3>
+<figure><img src="help/editor-newunit.jpg" alt="New unit"><figcaption>Creating a new unit by copying a similar one.</figcaption></figure>
+<ol class="steps">
+  <li>Click <span class="ui">＋ New unit</span> (left panel or points table).</li>
+  <li>Type the new unit's name and click <span class="ui">Choose…</span> to pick the existing unit that's most similar.</li>
+  <li>Check the faction, leave <b>Give it its own unit keyword</b> ticked, and click <span class="ui gold">Create unit</span>.</li>
+  <li>The new unit is a full copy (models, wargear, limits, points, abilities) and is already added to the faction's unit list. Now change whatever is different: points, stats, weapons, options.</li>
+  <li>If it's a character, set what it can lead (next section). If other Leaders should be able to join it, add the new unit to their “Can lead” lists.</li>
+  <li>Save, run <a href="#ed-check">Check data</a>, then reload the list builder.</li>
+</ol>
+
+<h3 id="ed-det">Adding a new detachment</h3>
+<ol class="steps">
+  <li>Pick the faction in the file list, then click <span class="ui">＋ New detachment</span> (next to ＋ New unit).</li>
+  <li>Type the new detachment's name. Under <b>Copy from</b>, search <b>all factions'</b> detachments by name or faction and click the one that's most similar. <b>Add to</b> chooses which list it goes in – for Space Marine chapters this is the Space Marines list, which every chapter shares.</li>
+  <li>Set its <b>Detachment Points</b> and tick its <b>Force dispositions</b>. Leave <b>Copy its enhancements too</b> ticked to start with copies of that detachment's enhancements, or untick it to start with none.</li>
+  <li>Click <span class="ui gold">Create detachment</span>. The new detachment opens with a <b>Detachment</b> section listing its rules and enhancements – click each one to rename it and rewrite its text and points. The original detachment isn't changed.</li>
+  <li><span class="ui">＋ Add enhancement</span> adds another enhancement that only appears with this detachment. Use <span class="ui">＋ Add rule</span> in the Rules section for extra rules or stratagems.</li>
+  <li>Save, then reload the list builder – the new detachment appears in the Detachment list with its cost and icons.</li>
+</ol>
+<p>When you copy from another faction, its rules and enhancements are copied across too; their text may mention the other faction's keywords (e.g. NECRONS), so read them through and change what's needed.</p>
+<p>The same <b>Detachment</b> section appears on every existing detachment, so you can also change an existing detachment's Detachment Points or force dispositions there.</p>
+
+<h3 id="ed-lead">Leaders: “Can lead / attach to”</h3>
+<figure><img src="help/editor-canlead.jpg" alt="Can lead"><figcaption>The units an Overlord can lead. Remove one with ✕ or add another with “Add unit…”.</figcaption></figure>
+<ul>
+  <li>Each unit the character can join is shown as a tag – <span class="ui">✕</span> removes it, <span class="ui">＋ Add unit…</span> adds one. Pick the unit's own <b>keyword</b> (marked <b>#</b> in the picker).</li>
+  <li><span class="ui">＋ Make it a Leader</span> / <span class="ui">＋ Make it a Support character</span> turn a model into a character that can attach. Remember to give it the <b>Leader</b> keyword too.</li>
+  <li>Some lists use combination rules (e.g. “this unit, but only with that detachment”). These are shown as text; edit them with the <span class="ui">JSON</span> button.</li>
+</ul>
+
+<h3 id="ed-strat">Adding stratagems</h3>
+<p>The BSData files don't include stratagems. If you want them in your list summary and printouts, open your detachment in the editor (search for its name), go to its <b>Rules</b> section and click <span class="ui">＋ Add rule</span> for each one – for example “Stratagem: Protocol of the Undying Legions” with its text. They'll then appear with the detachment rules everywhere in the list builder.</p>
+
+<h3 id="ed-check">Check data</h3>
+<figure><img src="help/editor-check.jpg" alt="Check data"><figcaption>Check data found links to a rule that was deleted.</figcaption></figure>
+<p><span class="ui">✔ Check data</span> (top bar) looks for mistakes, especially ones that are easy to make when adding units:</p>
+<ul>
+  <li>links, keywords or rules pointing to something that was deleted;</li>
+  <li>units with no points, no army-list section, no Faction keyword, no stat profile or no models;</li>
+  <li>units not added to any faction's unit list, or two units with the same name;</li>
+  <li>a unit using another unit's keyword (so the wrong Leaders can join it);</li>
+  <li>Leaders that can't lead anything, empty profiles, and limits or conditions that refer to things that don't exist.</li>
+</ul>
+<p><b>New problems</b> are listed first, each with an <span class="ui">Open</span> button. Problems that were already in the original BSData files are listed separately underneath and are usually safe to ignore. The check also runs automatically after every save, and a red banner appears on any unit page with a problem.</p>
+
+<h3 id="ed-save">Saving, undo &amp; backups</h3>
+<ul>
+  <li><span class="ui gold">💾 Save</span> (or <kbd>Ctrl</kbd>+<kbd>S</kbd>) writes your changes into the <code>.json</code> files and rebuilds the list builder's <code>data</code> folder. Reload the list builder to see them. The top bar lists files with unsaved changes.</li>
+  <li><span class="ui">↶ Undo</span> (or <kbd>Ctrl</kbd>+<kbd>Z</kbd>) reverses changes before you save.</li>
+  <li><b>Backups:</b> every save first copies the previous version of each changed file into a <code>backups</code> folder (one dated folder per save). <span class="ui">🕘 Backups</span> lists them and can <b>Restore</b> any file – your current version is backed up first, so a restore can be undone too. Old backups are only deleted when you choose to.</li>
+</ul>
+<figure><img src="help/editor-backups.jpg" alt="Backups"><figcaption>The Backups window.</figcaption></figure>
+<div class="note">Files keep the original BSData layout, so only the lines you actually change are different.</div>
+
+<!-- ============================================================ -->
+<h2 id="faq">8. Troubleshooting &amp; FAQ</h2>
+<h4>It says “No game data found”, or nothing loads.</h4>
+<p>You're probably running it from inside a .zip file. Extract the zip first (right-click → <b>Extract All…</b>) and open <code>index.html</code> from the extracted folder.</p>
+<h4>A button does nothing, or the screen looks out of date.</h4>
+<p>Press <kbd>Ctrl</kbd>+<kbd>F5</kbd> to reload the page fully. This is also needed after updating the program's files.</p>
+<h4>My lists have disappeared.</h4>
+<p>Lists are stored in the browser. Check you're using the same browser (and the same browser profile) as before. Clearing your browsing data also clears them – keep backups with <a href="#savefile">Save file</a>.</p>
+<h4>I can't find a unit.</h4>
+<p>It may be a Legends or Crucible unit, or hidden by a show/hide switch – tick <b>Legends</b> / <b>Crucible</b> or use <b>More…</b> in the <a href="#adding">Add unit list</a>. Some units only appear with a particular detachment.</p>
+<h4>An enhancement or option is missing.</h4>
+<p>Many enhancements and options belong to a specific detachment. Change your <a href="#config">detachment</a> and they'll appear.</p>
+<h4>The points don't match another app.</h4>
+<p>The other app may be using a different points update. Points come from the BSData files in your folder – see <a href="#data">Keeping the data up to date</a>, or fix them with the <a href="#ed-points">points table</a>.</p>
+<h4>My changes in the data editor don't show in the list builder.</h4>
+<p>Make sure you clicked <b>Save</b> in the editor, then reload the list builder (<kbd>Ctrl</kbd>+<kbd>F5</kbd>). If the home screen says the data source is “imported folder”, click <span class="ui">Use bundled data</span> so it reads the folder you edited.</p>
+<h4>Reopen doesn't open my folder.</h4>
+<p>Reopen asks Chrome for permission to edit the folder you used last time – look for a small pop-up near the address bar and choose <b>Allow</b> / <b>Edit files</b>. If something goes wrong, a message under the buttons says why (for example the folder was moved or renamed). <span class="ui">Choose folder…</span> always works: it opens in your last folder, so you just click <b>Select folder</b>.</p>
+<h4>The editor can't save.</h4>
+<p>Saving needs <b>Chrome</b> or <b>Edge</b>, and you must allow editing when asked. In other browsers the editor works read-only and changed files are downloaded instead.</p>
+<h4>Can I give this to friends?</h4>
+<p>Yes – zip up the whole folder (or use a share copy) and they can put it anywhere. Each person's lists are stored in their own browser; share individual lists with <a href="#savefile">Save file</a>.</p>
+<h4>Does it need the internet?</h4>
+<p>No. Everything runs from the folder on your computer.</p>
+
+<!-- ============================================================ -->
+<h2 id="keys">9. Keyboard shortcuts</h2>
+<table>
+  <tr><th>Keys</th><th>Where</th><th>What it does</th></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>List builder, data editor</td><td>Undo</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>List builder</td><td>Redo</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Data editor</td><td>Save</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>F5</kbd></td><td>Anywhere</td><td>Reload the page fully</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="about">10. About the data</h2>
+<p>Unit data, points and rules text come from the community-maintained <b>BSData</b> project (github.com/BSData/wh40k-11e). It is not official, may contain mistakes, and is not endorsed by Games Workshop. Stratagems are not included in the BSData files. Always check against your official rules if something looks wrong – and you can fix it yourself with the <a href="#editor">data editor</a>.</p>
+<p class="top"><a href="#start">↑ Back to top</a></p>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+OFFLINE LIST BUILDER – Warhammer 40,000 (11th edition)
+=======================================================
+
+1. UNZIP FIRST
+   Right-click the .zip -> "Extract All…", and put the folder anywhere you like
+   (Desktop, Documents, a USB stick…). Don't run it from inside the zip.
+
+2. START
+   Open the extracted folder and double-click  index.html
+   It opens in your web browser (Chrome or Edge recommended, Firefox also works).
+   No internet connection or installation needed.
+
+3. BUILD A LIST
+   Pick a faction, battle size and name -> "Create roster", then "+ Add unit".
+   Your lists are saved automatically IN YOUR BROWSER (not in this folder).
+   Use "Save file" to back a list up, or to give it to someone else
+   (they use "Import list…" on the home screen).
+
+4. PLAY A GAME
+   Open a list and press "▶ Play" for a read-only view with wound, CP/VP,
+   round/phase and Battle-shock tracking.
+
+5. SHARING LISTS WITH OTHER APPS
+   "Export list" gives GW app or WTC tournament text.
+   "Import list…" accepts pasted GW app / New Recruit text and
+   BattleScribe / New Recruit .rosz files.
+
+6. EDITING THE DATA (optional)
+   Open  editor.html  in Chrome or Edge, click "Choose folder…" and pick THIS
+   folder (the one containing index.html and wh40k-11e-main). Changes are saved
+   into the files; reload the list builder afterwards.
+
+FULL ILLUSTRATED GUIDE: open  help.html  (or press the ? button in the program).
+More detail is also in README.txt.
+Unit data comes from the community BSData project (github.com/BSData/wh40k-11e);
+it is not official and not endorsed by Games Workshop.

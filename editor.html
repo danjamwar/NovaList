@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BSData Editor – Offline List Builder</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body class="editor">
+<header id="topbar">
+  <div class="brand"><a href="index.html" title="Back to list builder">⚔ <span>List Builder</span></a> <span class="muted">/ Data editor</span></div>
+  <div id="ed-top"></div>
+  <a class="btn sm" id="help-btn" href="help.html#editor" target="_blank" title="Help – open the user guide">? Help</a>
+</header>
+<main id="main"><div class="loading">Loading…</div></main>
+<div id="modal" class="modal hidden"><div class="modal-box"><div id="modal-body"></div></div></div>
+<div id="toast" class="toast hidden"></div>
+<input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+<script src="js/bsformat.js"></script>
+<script src="js/datacheck.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>
