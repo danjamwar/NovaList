@@ -2,6 +2,8 @@
 
 An offline army list builder and game companion for **Warhammer 40,000 (11th edition)**, using the community [BSData](https://github.com/BSData/wh40k-11e) army data. It runs entirely in your web browser – no installation and no internet connection needed.
 
+**▶ Use it online: [danjamwar.github.io/NovaList](https://danjamwar.github.io/NovaList/)** – or download it and run it from a folder.
+
 ![Play mode](help/play.jpg)
 
 ## Features
@@ -12,7 +14,13 @@ An offline army list builder and game companion for **Warhammer 40,000 (11th edi
 - **Export and import** lists in the Warhammer 40,000 app / New Recruit text format, WTC format, and BattleScribe / New Recruit `.ros`/`.rosz` files. Print or save to PDF.
 - **Data editor** (`editor.html`) for fixing points, stats, rules and options, and for adding new units and detachments.
 
+## Use it online
+
+Open **https://danjamwar.github.io/NovaList/** in any browser – nothing to download or install. It works on computers, tablets and phones, and after the first visit it also works offline (see below).
+
 ## Getting started
+
+To run it from a folder on your computer instead:
 
 1. Download this repository (**Code → Download ZIP**) and **extract** it – it won't work from inside the zip.
 2. Double-click **`index.html`**. Chrome or Edge work best.
