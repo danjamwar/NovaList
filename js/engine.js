@@ -880,6 +880,19 @@
     bump();
   }
 
+  // "Selected by default, but you can untick it": BSData gives such entries a min constraint and a modifier that
+  // always sets that min to 0 (e.g. Show Khorne Daemons in a Daemons army, or default wargear that can be removed).
+  // The entry is added when its parent is first created, using the min before that modifier.
+  function optionalDefault(node) {
+    let n = 0;
+    for (const c of node.constraints || []) {
+      if (c.type !== 'min' || !(Number(c.value) > 0) || (c.field && c.field !== 'selections')) continue;
+      const off = (node.modifiers || []).some(m => m.field === c.id && m.type === 'set' && Number(m.value) === 0 && !(m.conditions && m.conditions.length) && !(m.conditionGroups && m.conditionGroups.length) && !m.repeats);
+      if (off) n = Math.max(n, Number(c.value));
+    }
+    return n;
+  }
+
   function addDefaults(P) {
     const cat = rosterOf(P).catalog;
     const walk = (options, groups) => {
@@ -903,7 +916,8 @@
           }
           walk(kids, groups.concat([opt]));
         } else {
-          const min = constraintValue(opt, v, 'min', ['parent']) || 0;
+          // (optional defaults only outside option groups – inside a group the group's own default choice applies)
+          const min = constraintValue(opt, v, 'min', ['parent']) || (groups.length ? 0 : optionalDefault(opt)) || 0;
           const existing = selsOf(P, opt).reduce((a, c) => a + c.number, 0);
           if (min > 0 && existing < min) {
             const ex = selsOf(P, opt)[0];
@@ -925,6 +939,7 @@
       let min = 0;
       const e = ev(v);
       n.constraints.forEach(c => { if (c.type === 'min' && (!c.field || c.field === 'selections') && ['roster', 'force', 'parent'].includes(c.scope)) min = Math.max(min, e.cons[c.id]); });
+      if (!min) min = optionalDefault(n);
       if (min > 0 && selsOf(force, n).length === 0) {
         for (let i = 0; i < min; i++) addSel(force, n, [], 1);
       }

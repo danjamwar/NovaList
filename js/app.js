@@ -269,6 +269,8 @@
   }
 
   function openRoster(cat, roster) {
+    // lists saved before an option became "on by default" (e.g. Show Khorne Daemons) get it now
+    try { roster.forces.forEach(f => E.forceDefaults(f)); E.bump(); } catch (e) { console.warn(e); }
     S.catalog = cat; S.roster = roster; S.view = 'roster';
     S.selPath = null; S.mode = 'add'; S.undo = []; S.redo = []; S.addFilter = ''; S.addCat = '';
     S.ptab = roster.forces.some(f => f.children.some(x => !isCfg(x))) ? 'army' : 'add'; S.tbMore = false;
