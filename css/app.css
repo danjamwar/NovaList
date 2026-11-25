@@ -395,3 +395,86 @@ td.dmg { color: #ff8f86 !important; font-weight: 700; }
 h4 .fd-icon { width: 20px; height: 21px; }
 .offline-status { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
 .offline-status b { color: #a7e8c3; }
+
+/* =================================================================== phones (≤600px wide; tablets keep the normal layout) */
+.tb-more, .ptabs, .pl-mini, .tb-short-phone { display: none; }
+.tb-menu { position: fixed; top: 54px; right: 8px; z-index: 60; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 210px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.tb-menu .btn { width: 100%; text-align: left; }
+.tb-menu-row { display: flex; gap: 8px; } .tb-menu-row .btn { flex: 1; text-align: center; }
+.tb-menu-info { font-size: 13px; color: var(--muted); padding: 2px 4px; } .tb-menu-info.bad { color: #ffb3ae; }
+@media (max-width: 600px) {
+  /* compact top bars: the rest lives in the ⋯ menu */
+  #topbar { height: 52px; flex-wrap: nowrap; padding: 0 8px; gap: 8px; }
+  #topbar .brand span { display: none; }
+  #topbar-roster { flex-wrap: nowrap; gap: 6px; overflow: visible; }
+  .tb-hide-phone, .tb-long-phone, #topbar .tb-long { display: none !important; }
+  .tb-more { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; font-size: 18px; }
+  #roster-name { display: none; }   /* the name and Rename are in the ⋯ menu */
+  #topbar-roster .pill { white-space: nowrap; }
+  #help-btn { display: none; }
+  #main { height: calc(100% - 52px); }
+
+  /* list builder: one section at a time, chosen with the tab bar at the bottom */
+  .roster { display: block; height: auto; padding-bottom: 72px; }
+  .roster > #col-left, .roster > #col-mid, .roster > #col-right { display: none; border: none; }
+  .roster[data-ptab="army"] #col-left, .roster[data-ptab="add"] #col-mid, .roster[data-ptab="unit"] #col-mid, .roster[data-ptab="sheet"] #col-right { display: flex; }
+  .roster .scroll { overflow: visible; padding: 12px 12px 20px; }
+  .ptabs { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #101216; border-top: 1px solid var(--line); padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); }
+  .ptab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; background: none; border: none; color: var(--muted); font-size: 12px; padding: 6px 2px; border-radius: 8px; cursor: pointer; min-height: 52px; }
+  .ptab span { font-size: 18px; line-height: 1.1; }
+  .ptab.on { color: var(--accent2); background: var(--panel2); }
+  .ptab:disabled { opacity: .35; }
+
+  /* bigger tap targets */
+  .btn { min-height: 40px; }
+  .btn.sm { min-height: 38px; padding: 6px 12px; }
+  .icon { min-width: 38px; min-height: 38px; font-size: 16px; }
+  .unit-list .icon { margin-left: 4px; }
+  .spin button { width: 38px; height: 38px; font-size: 17px; }
+  .spin .num { width: 44px; height: 38px; }
+  .info-btn { width: 30px; height: 30px; font-size: 14px; }
+  .chip { padding: 7px 13px; font-size: 13px; }
+  input[type=checkbox], input[type=radio] { width: 20px; height: 20px; }
+  .opt-row { min-height: 42px; }
+  .cb { min-height: 36px; }
+  input, select, textarea { font-size: 16px !important; }   /* stops phones zooming in when you tap a box */
+  .ctr-b { width: 42px; height: 42px; }
+  .mkb { padding: 9px 13px; }
+  .ph { padding: 9px 10px; }
+  .pip { width: 26px; height: 26px; }
+  ul.unit-list li { min-height: 46px; }
+
+  /* play mode: slim scoreboard, units in a swipeable strip, the selected unit fills the screen */
+  .play { height: auto; min-height: 100%; }
+  .pl-score { display: flex; flex-direction: column; padding: 6px 8px; position: sticky; top: 0; z-index: 30; }
+  .pl-mini { display: flex; align-items: center; gap: 6px; order: -1; }
+  .pl-mini .mini-side { display: flex; flex-direction: column; align-items: center; min-width: 54px; font-size: 12px; color: var(--muted); padding: 2px 4px; border-radius: 6px; border: 1px solid transparent; }
+  .pl-mini .mini-side b { font-size: 18px; color: var(--accent2); line-height: 1.1; }
+  .pl-mini .mini-side small { font-size: 11px; }
+  .pl-mini .mini-side.active { border-color: var(--accent); }
+  .pl-mini .mini-mid { flex: 1; text-align: center; font-size: 12px; color: var(--muted); line-height: 1.25; cursor: pointer; }
+  .pl-mini .mini-mid b { color: var(--text); font-size: 14px; }
+  .pl-score > .side, .pl-score > .pl-round { display: none; }
+  .pl-score.open > .side, .pl-score.open > .pl-round { display: flex; margin-top: 8px; }
+  .pl-score.open > .side { flex-direction: column; }
+  .pl-round { min-width: 0; }
+  .phases { flex-wrap: wrap; justify-content: center; }
+  .pl-body { display: block; }
+  .pl-list { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; max-height: none; padding: 8px; border-right: none; border-bottom: 1px solid var(--line); scroll-snap-type: x proximity; }
+  .pl-list > * { flex: 0 0 auto; margin: 0 !important; scroll-snap-align: start; }
+  .pl-list .pl-card { width: 168px; }
+  .pl-list .pl-army { width: 120px; white-space: normal; }
+  .pl-list .pl-dead-h { writing-mode: vertical-rl; transform: rotate(180deg); margin: 0; align-self: center; }
+  .pl-detail { overflow: visible; padding: 10px 10px 40px; }
+}
+
+/* tap for details */
+#tap-tip { position: fixed; z-index: 80; max-width: min(320px, 90vw); background: #0d0f13; color: var(--text); border: 1px solid var(--accent); border-radius: 8px; padding: 7px 10px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 20px rgba(0,0,0,.5); pointer-events: none; }
+td.dmg, td.modded, td[title^="Changed"], .fd-icon, .ann, .mk[title], .dp-cost, .att-mark { cursor: help; }
+@media (max-width: 600px) {
+  /* datasheet tables scroll sideways instead of squashing; only the keywords column wraps */
+  .sheet .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sheet th, .sheet td { white-space: nowrap; }
+  .sheet td.pname { white-space: normal; min-width: 96px; }
+  .sheet td:last-child { white-space: normal; min-width: 130px; }
+}

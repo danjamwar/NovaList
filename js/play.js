@@ -112,9 +112,21 @@
     history = []; sel = null; tab = 'unit';
     const cs = cards(); if (cs.length) sel = cs[0].key;
     document.body.classList.add('playing');
+    keepAwake(true);
     render();
   }
-  function close() { document.body.classList.remove('playing'); G = null; A.back(); }
+  // keep the screen on while play mode is open (phones and tablets would otherwise dim and lock mid-game)
+  let wakeLock = null;
+  async function keepAwake(on) {
+    try {
+      if (on && G && 'wakeLock' in navigator && document.visibilityState === 'visible' && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+    } catch (e) { wakeLock = null; /* not supported here, or the battery saver refused */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (G && document.visibilityState === 'visible') keepAwake(true); });
+  function close() { document.body.classList.remove('playing'); keepAwake(false); G = null; A.back(); }
 
   function render() {
     if (!G) return;
@@ -132,13 +144,20 @@
   }
   function renderTop() {
     const r = roster();
-    $('#topbar-roster').innerHTML = `<span class="pill play-pill">▶ PLAY MODE</span><span class="pl-title">${A.esc(r.name)}</span>
-      <span class="pill sub">${E.rosterCost(r, cat().ptsType)} pts</span><span class="spacer"></span>
-      <button class="btn sm" data-act="pl-scores" title="Victory points scored in each battle round">📊 Scores</button>
-      <button class="btn sm" data-act="pl-wound-chart" title="Wound roll reminder">🎲 Wound roll</button>
-      <button class="btn sm" data-act="pl-undo" ${history.length ? '' : 'disabled'} title="Undo last game change">↶ Undo</button>
-      <button class="btn sm" data-act="pl-reset">New game</button>
-      <button class="btn sm primary" data-act="pl-exit">✕ Exit play mode</button>`;
+    $('#topbar-roster').innerHTML = `<span class="pill play-pill">▶ PLAY<span class="tb-long-phone"> MODE</span></span><span class="pl-title tb-hide-phone">${A.esc(r.name)}</span>
+      <span class="pill sub tb-hide-phone">${E.rosterCost(r, cat().ptsType)} pts</span><span class="spacer"></span>
+      <button class="btn sm tb-hide-phone" data-act="pl-scores" title="Victory points scored in each battle round">📊 Scores</button>
+      <button class="btn sm tb-hide-phone" data-act="pl-wound-chart" title="Wound roll reminder">🎲 Wound roll</button>
+      <button class="btn sm" data-act="pl-undo" ${history.length ? '' : 'disabled'} title="Undo last game change">↶<span class="tb-long-phone"> Undo</span></button>
+      <button class="btn sm tb-hide-phone" data-act="pl-reset">New game</button>
+      <button class="btn sm primary tb-hide-phone" data-act="pl-exit">✕ Exit play mode</button>
+      <button class="btn sm tb-more" data-act="pl-more" title="More">⋯</button>
+      ${menuOpen ? `<div class="tb-menu">
+        <button class="btn" data-act="pl-scores">📊 Score by round</button>
+        <button class="btn" data-act="pl-wound-chart">🎲 Wound roll</button>
+        <button class="btn" data-act="pl-army">📜 Army &amp; detachment rules</button>
+        <button class="btn" data-act="pl-reset">New game</button>
+        <button class="btn primary" data-act="pl-exit">✕ Exit play mode</button></div>` : ''}`;
   }
   function counter(side, field, label) {
     return `<div class="ctr"><span class="ctr-l">${label}</span><button class="ctr-b" data-act="pl-add" data-side="${side}" data-f="${field}" data-n="-1">−</button><span class="ctr-v">${G[side][field]}</span><button class="ctr-b" data-act="pl-add" data-side="${side}" data-f="${field}" data-n="1">+</button></div>`;
@@ -146,7 +165,14 @@
   function scoreboard() {
     const tot = (x) => x.pri + x.sec;
     const turnName = G.turn === 'me' ? 'Your turn' : `${A.esc(G.opp.name)}'s turn`;
-    return `<div class="pl-score">
+    // phones: a one-line summary; tap ▾ for the full counters
+    const mini = `<div class="pl-mini">
+      <span class="mini-side ${G.turn === 'me' ? 'active' : ''}">You <b>${tot(G.me)}</b><small>CP ${G.me.cp}</small></span>
+      <span class="mini-mid" data-act="pl-scoretoggle">R${G.round}${G.round > LAST_ROUND ? ' OT' : ''} · ${G.turn === 'me' ? 'You' : A.esc(G.opp.name)}<br><b>${PHASES[G.phase]}</b></span>
+      <span class="mini-side ${G.turn === 'opp' ? 'active' : ''}">${A.esc(G.opp.name.length > 9 ? G.opp.name.slice(0, 8) + '…' : G.opp.name)} <b>${tot(G.opp)}</b><small>CP ${G.opp.cp}</small></span>
+      ${G.ended ? '<button class="btn sm primary" data-act="pl-endshow">🏁</button>' : `<button class="btn sm primary" data-act="pl-next">${lastPhaseOfGame() ? 'End 🏁' : 'Next ▸'}</button>`}
+      <button class="btn sm" data-act="pl-scoretoggle" title="${scoreOpen ? 'Hide' : 'Show'} the full scoreboard">${scoreOpen ? '▴' : '▾'}</button></div>`;
+    return `<div class="pl-score ${scoreOpen ? 'open' : ''}">
       <div class="side me ${G.turn === 'me' ? 'active' : ''}"><div class="side-h">You <span class="vp-total">${tot(G.me)} VP</span></div>
         <div class="ctrs">${counter('me', 'cp', 'CP')}${counter('me', 'pri', 'Primary')}${counter('me', 'sec', 'Secondary')}</div></div>
       <div class="pl-round">
@@ -158,6 +184,7 @@
       </div>
       <div class="side opp ${G.turn === 'opp' ? 'active' : ''}"><div class="side-h"><input class="opp-name" data-act-input="pl-oppname" value="${A.esc(G.opp.name)}"> <span class="vp-total">${tot(G.opp)} VP</span></div>
         <div class="ctrs">${counter('opp', 'cp', 'CP')}${counter('opp', 'pri', 'Primary')}${counter('opp', 'sec', 'Secondary')}</div></div>
+      ${mini}
     </div>`;
   }
   function markChips(key) {
@@ -604,6 +631,7 @@
 
   // ------------------------------------------------------------------ wound roll reminder (core rules 05.02)
   let woundOpen = false, wS = 4, wT = 4;
+  let menuOpen = false, scoreOpen = false;   // phone: ⋯ menu, full scoreboard
   const WOUND_ROWS = [
     ['twice', 'Strength is <b>TWICE</b> (or more than twice) the Toughness', 2],
     ['greater', 'Strength is <b>GREATER</b> than the Toughness', 3],
@@ -696,12 +724,15 @@
   document.addEventListener('click', (ev) => {
     if (!G) return;
     const el = ev.target.closest('[data-act]');
+    if (menuOpen && (!el || el.dataset.act !== 'pl-more')) { menuOpen = false; const m = document.querySelector('#topbar-roster .tb-menu'); if (m) m.remove(); }
     if (!el || !/^pl-/.test(el.dataset.act)) return;
     const a = el.dataset.act, k = el.dataset.k;
     if (el.tagName === 'A') ev.preventDefault();
     switch (a) {
       case 'pl-exit': close(); break;
       case 'pl-wound-chart': woundOpen = true; render(); break;
+      case 'pl-more': menuOpen = !menuOpen; renderTop(); break;
+      case 'pl-scoretoggle': scoreOpen = !scoreOpen; render(); break;
       case 'pl-remtoggle': remOpen = !remOpen; render(); break;
       case 'pl-restoggle': resOpen = !resOpen; render(); break;
       case 'pl-rem': if (remExpanded.has(k)) remExpanded.delete(k); else remExpanded.add(k); render(); break;
@@ -776,6 +807,6 @@
   });
   function findGroup(k, gk) { const u = units().find(x => x.key === k); return u ? modelGroups(u).find(g => g.key === gk) : null; }
 
-  function closeQuiet() { document.body.classList.remove('playing'); G = null; }
+  function closeQuiet() { document.body.classList.remove('playing'); keepAwake(false); G = null; }
   window.Play = { init(api) { A = api; }, open, close, closeQuiet, isOpen: () => !!G };
 })();

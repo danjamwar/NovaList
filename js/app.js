@@ -271,6 +271,7 @@
   function openRoster(cat, roster) {
     S.catalog = cat; S.roster = roster; S.view = 'roster';
     S.selPath = null; S.mode = 'add'; S.undo = []; S.redo = []; S.addFilter = ''; S.addCat = '';
+    S.ptab = roster.forces.some(f => f.children.some(x => !isCfg(x))) ? 'army' : 'add'; S.tbMore = false;
     roster.forces.forEach(ensureShowHide);
     E.bump();
     roster.costLimit = rosterLimit(roster);
@@ -290,15 +291,25 @@
     $('#topbar-roster').innerHTML = `
       <input id="roster-name" value="${esc(r.name)}" title="Roster name">
       <span class="pill ${limit && total > limit ? 'bad' : ''}">${total}${limit ? ' / ' + limit : ''} pts</span>
-      ${otherCosts.map(x => `<span class="pill sub ${x.lim !== null && x.v > x.lim ? 'bad' : ''}"><span class="tb-long">${esc(x.t.name)}</span><span class="tb-short" title="${esc(x.t.name)}">${/Detachment/.test(x.t.name) ? 'DP' : 'Enh.'}</span>: ${x.v}${x.lim !== null ? ' / ' + x.lim : ''}</span>`).join('')}
+      ${otherCosts.map(x => `<span class="pill sub tb-hide-phone ${x.lim !== null && x.v > x.lim ? 'bad' : ''}"><span class="tb-long">${esc(x.t.name)}</span><span class="tb-short" title="${esc(x.t.name)}">${/Detachment/.test(x.t.name) ? 'DP' : 'Enh.'}</span>: ${x.v}${x.lim !== null ? ' / ' + x.lim : ''}</span>`).join('')}
       <button class="pill ${errs.length ? 'bad' : 'good'}" data-act="toggle-errors">${errs.length ? '⚠ ' + errs.length + ' issue' + (errs.length > 1 ? 's' : '') : '✓ Valid'}</button>
       <span class="spacer"></span>
-      <button class="btn sm" data-act="undo" ${S.undo.length ? '' : 'disabled'} title="Undo (Ctrl+Z)">↶</button>
-      <button class="btn sm" data-act="redo" ${S.redo.length ? '' : 'disabled'} title="Redo (Ctrl+Y)">↷</button>
+      <button class="btn sm tb-hide-phone" data-act="undo" ${S.undo.length ? '' : 'disabled'} title="Undo (Ctrl+Z)">↶</button>
+      <button class="btn sm tb-hide-phone" data-act="redo" ${S.redo.length ? '' : 'disabled'} title="Redo (Ctrl+Y)">↷</button>
       <button class="btn sm play-btn" data-act="play" title="Read-only view for playing a game">▶ Play</button>
-      <button class="btn sm" data-act="export-text">Export<span class="tb-long"> list</span></button>
-      <button class="btn sm" data-act="print">Print<span class="tb-long"> / PDF</span></button>
-      <button class="btn sm" data-act="dl-current">Save file</button>`;
+      <button class="btn sm tb-hide-phone" data-act="export-text">Export<span class="tb-long"> list</span></button>
+      <button class="btn sm tb-hide-phone" data-act="print">Print<span class="tb-long"> / PDF</span></button>
+      <button class="btn sm tb-hide-phone" data-act="dl-current">Save file</button>
+      <button class="btn sm tb-more" data-act="tb-more" title="More">⋯</button>
+      ${S.tbMore ? `<div class="tb-menu">
+        ${otherCosts.map(x => `<div class="tb-menu-info ${x.lim !== null && x.v > x.lim ? 'bad' : ''}">${esc(x.t.name)}: ${x.v}${x.lim !== null ? ' / ' + x.lim : ''}</div>`).join('')}
+        <div class="tb-menu-info"><b>${esc(r.name)}</b></div>
+        <button class="btn" data-act="rename-list">✎ Rename list</button>
+        <div class="tb-menu-row"><button class="btn" data-act="undo" ${S.undo.length ? '' : 'disabled'}>↶ Undo</button><button class="btn" data-act="redo" ${S.redo.length ? '' : 'disabled'}>↷ Redo</button></div>
+        <button class="btn" data-act="export-text">Export list</button>
+        <button class="btn" data-act="print">Print / PDF</button>
+        <button class="btn" data-act="dl-current">Save file</button>
+        <button class="btn" data-act="home">⌂ Home</button></div>` : ''}`;
 
     const keep = {};
     ['#col-left', '#col-mid', '#col-right'].forEach(id => { const el = $(id + ' .scroll'); if (el) keep[id] = el.scrollTop; });
@@ -306,12 +317,19 @@
     const sel = selFromPath(S.selPath);
     if (!sel && S.mode === 'unit') S.mode = 'add';
 
+    const ptab = S.ptab || 'army';
+    const unitSel = S.mode === 'unit' && sel;
+    const cfgSel = unitSel && isCfg(rootOf(sel));
     $('#main').innerHTML = `
-      <div class="roster">
+      <div class="roster" data-ptab="${ptab === 'unit' && !unitSel ? 'add' : ptab}">
         <aside id="col-left"><div class="scroll">${renderLeft(sel, errs)}</div></aside>
         <section id="col-mid"><div class="scroll">${S.mode === 'unit' && sel ? renderUnit(sel) : renderAdd()}</div></section>
         <section id="col-right"><div class="scroll">${S.mode === 'unit' && sel && !isCfg(rootOf(sel)) ? renderDatasheet(rootOf(sel)) : renderRosterSummary()}</div></section>
-      </div>`;
+      </div>
+      <nav class="ptabs">
+        ${[['army', '☰', 'Army'], ['add', '＋', 'Add'], ['unit', '✎', unitSel ? (cfgSel ? 'Settings' : 'Unit') : 'Unit'], ['sheet', '▤', unitSel && !cfgSel ? 'Datasheet' : 'Summary']]
+          .map(([k, ic, lab]) => `<button class="ptab ${(ptab === k || (k === 'add' && ptab === 'unit' && !unitSel)) ? 'on' : ''}" data-act="ptab" data-t="${k}" ${k === 'unit' && !unitSel ? 'disabled' : ''}><span>${ic}</span>${lab}</button>`).join('')}
+      </nav>`;
     Object.keys(keep).forEach(id => { const el = $(id + ' .scroll'); if (el && !full) el.scrollTop = keep[id]; });
     if (S.mode === 'add') { const i = $('#add-search'); if (i && S._focusSearch) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); S._focusSearch = false; } }
   }
@@ -933,8 +951,36 @@
     }
   }
 
+  // ------------------------------------------------------------------ tap for details
+  // Things that explain themselves on mouse hover (red Damaged values, gold changed values, force disposition
+  // icons, tags) also explain themselves when tapped, for touch screens.
+  const TIP_SEL = 'td.dmg, td.modded, td[title^="Changed"], .fd-icon, .ann, .mk[title], .dp-cost, .tb-short[title], .att-mark, .tip[title]';
+  function hideTip() { const t = document.getElementById('tap-tip'); if (t) t.remove(); }
+  function showTip(el) {
+    hideTip();
+    const text = el.getAttribute('title') || el.getAttribute('alt'); if (!text) return;
+    const t = document.createElement('div'); t.id = 'tap-tip'; t.textContent = text; document.body.appendChild(t);
+    const r = el.getBoundingClientRect(), w = t.offsetWidth, h = t.offsetHeight;
+    let x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+    let y = r.bottom + 8; if (y + h > innerHeight - 8) y = Math.max(8, r.top - h - 8);
+    t.style.left = x + 'px'; t.style.top = y + 'px';
+  }
+  document.addEventListener('click', (ev) => {
+    const el = ev.target.closest && ev.target.closest(TIP_SEL);
+    if (!el) { hideTip(); return; }
+    // an icon inside an option row shouldn't also tick the option
+    if (el.closest('label')) { ev.preventDefault(); ev.stopPropagation(); }
+    showTip(el);
+  }, true);
+  document.addEventListener('scroll', hideTip, true);
+
+  // phones: after switching tab, start at the top of the page
+  function phoneTop() { if (window.matchMedia && matchMedia('(max-width: 600px)').matches) { const m = $('#main'); if (m) m.scrollTop = 0; } }
+
   async function onClick(ev) {
     const el = ev.target.closest('[data-act]');
+    // any click outside the ⋯ button closes the ⋯ menu
+    if (S.tbMore && (!el || el.dataset.act !== 'tb-more')) { S.tbMore = false; const m = document.querySelector('#topbar-roster .tb-menu'); if (m) m.remove(); }
     if (!el) return;
     const act = el.dataset.act;
     if (el.tagName === 'INPUT' && el.dataset.act === 'opt-num') return;
@@ -963,7 +1009,13 @@
       case 'load-folder': $('#folder-import').click(); break;
       case 'reset-data': await E.IDB.clear(); location.reload(); break;
 
-      case 'show-add': S.mode = 'add'; S.selPath = null; renderRoster(); break;
+      case 'show-add': S.mode = 'add'; S.selPath = null; S.ptab = el.closest('#col-mid') ? 'army' : 'add'; renderRoster(); phoneTop(); break;
+      case 'ptab': {
+        const t = el.dataset.t;
+        if (t === 'add') { S.mode = 'add'; S.selPath = null; }
+        S.ptab = t; renderRoster(); phoneTop(); break;
+      }
+      case 'tb-more': S.tbMore = !S.tbMore; renderRoster(); return;
       case 'add-cat': S.addCat = el.dataset.cat; renderRoster(); break;
       case 'toggle-allies': Prefs.hideAllies = !el.checked; savePrefs(); renderRoster(); break;
       case 'toggle-show': {
@@ -975,20 +1027,20 @@
         if (node) { const ex = E.selsOf(sh, node); if (ex.length) ex.forEach(x => E.removeSel(x)); else E.addSel(sh, node, [], 1); }
         commit(); break;
       }
-      case 'open-showhide': { const sh = showHideSel(S.roster.forces[0]); if (sh) { S.selPath = pathOf(sh); S.mode = 'unit'; renderRoster(); } break; }
+      case 'open-showhide': { const sh = showHideSel(S.roster.forces[0]); if (sh) { S.selPath = pathOf(sh); S.mode = 'unit'; S.ptab = 'unit'; renderRoster(); phoneTop(); } break; }
       case 'add': {
         const f = S.roster.forces[0];
         const n = S.catalog.rootNodes().find(x => x.key === el.dataset.key);
         if (!n) return;
         beginChange();
         const s = E.addSel(f, n, [], 1);
-        S.selPath = pathOf(s); S.mode = 'unit';
-        commit();
+        S.selPath = pathOf(s); S.mode = 'unit'; S.ptab = 'unit';
+        commit(); phoneTop();
         break;
       }
       case 'select': {
         if (ev.target.closest('button')) return;
-        S.selPath = el.dataset.path.split(',').map(Number); S.mode = 'unit'; renderRoster(); break;
+        S.selPath = el.dataset.path.split(',').map(Number); S.mode = 'unit'; S.ptab = 'unit'; renderRoster(); phoneTop(); break;
       }
       case 'remove': {
         const s = selFromPath(el.dataset.path.split(',').map(Number));
@@ -1004,8 +1056,8 @@
         beginChange();
         const copy = cloneSel(s, s.parent);
         s.parent.children.splice(s.parent.children.indexOf(s) + 1, 0, copy);
-        S.selPath = pathOf(copy); S.mode = 'unit';
-        commit(); break;
+        S.selPath = pathOf(copy); S.mode = 'unit'; S.ptab = 'unit';
+        commit(); phoneTop(); break;
       }
       case 'rename': {
         const s = rootOf(selFromPath(S.selPath));
@@ -1013,10 +1065,11 @@
         if (name === null) return;
         beginChange(); s.customName = name.trim(); commit(); break;
       }
-      case 'toggle-errors': S.showErrors = !S.showErrors; renderRoster(); break;
+      case 'toggle-errors': S.showErrors = !S.showErrors; if (S.showErrors) S.ptab = 'army'; renderRoster(); phoneTop(); break;
+      case 'rename-list': { const n = prompt('List name:', S.roster.name); if (n !== null) { S.roster.name = n.trim() || 'Roster'; commitNoUndo(); } break; }
       case 'goto-err': {
         const e = S._errs[Number(el.dataset.i)];
-        if (e && e.sel) { S.selPath = pathOf(rootOf(e.sel)); S.mode = 'unit'; renderRoster(); }
+        if (e && e.sel) { S.selPath = pathOf(rootOf(e.sel)); S.mode = 'unit'; S.ptab = 'unit'; renderRoster(); phoneTop(); }
         break;
       }
       case 'toggle-group': {
