@@ -188,6 +188,7 @@
         <button class="btn" data-act="load-folder">Load data folder…</button>
         ${E.Data.source === 'imported' ? '<button class="btn" data-act="reset-data">Use bundled data</button>' : ''}
         <div id="offline-status" class="offline-status"></div>
+        ${/^https?:$/.test(location.protocol) ? '<div class="upd-row"><button class="btn" data-act="check-updates">⟳ Check for updates</button><span id="upd-status" class="muted small"></span></div>' : ''}
       </section>
       <section class="card">
         <h2>Help</h2>
@@ -214,6 +215,46 @@
       if (n >= want.length) el.innerHTML = '✓ <b>Ready to use offline</b> on this device – the program and all army data are saved. Open this page (or the home-screen icon) with no internet and it still works.';
       else { el.innerHTML = `⏳ Saving for offline use… ${n} of ${want.length} army files. Keep this page open until it says Ready.`; setTimeout(offlineStatus, 2000); }
     } catch (e) { el.textContent = 'Offline status unavailable (' + e.message + ').'; }
+  }
+
+  // Compare every program and army data file with the website and replace any saved copy that is out of date.
+  async function checkUpdates() {
+    const st = $('#upd-status'), btn = document.querySelector('[data-act="check-updates"]');
+    const say = (h) => { if (st) st.innerHTML = h; };
+    if (!navigator.onLine) { say('You\'re offline – connect to the internet and try again.'); return; }
+    if (!('caches' in window)) { say('This browser can\'t save files, so it always uses the website\'s latest version.'); return; }
+    if (btn) btn.disabled = true;
+    try {
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) reg.update().catch(() => {});
+      const list = new Set(['index.html', 'editor.html', 'help.html', 'css/app.css', 'css/editor.css', 'js/engine.js', 'js/listio.js', 'js/app.js', 'js/play.js', 'js/bsformat.js', 'js/datacheck.js', 'js/editor.js', 'data/manifest.js']);
+      const man = await (await fetch('data/manifest.js', { cache: 'no-cache' })).text();
+      for (const x of man.matchAll(/"file"\s*:\s*"([^"]+)"/g)) list.add('data/' + x[1]);
+      const c = await caches.open('novalist-v1');
+      const files = [...list]; let done = 0, changed = [], failed = 0;
+      const same = (a, b) => { if (a.byteLength !== b.byteLength) return false; const x = new Uint8Array(a), y = new Uint8Array(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false; return true; };
+      for (let i = 0; i < files.length; i += 6) {
+        await Promise.all(files.slice(i, i + 6).map(async (f) => {
+          try {
+            const old = await c.match(f, { ignoreSearch: true });
+            const oldBuf = old ? await old.arrayBuffer() : null;
+            const res = await fetch(f, { cache: 'no-cache' });
+            if (!res.ok) { failed++; return; }
+            const buf = await res.clone().arrayBuffer();
+            if (!oldBuf || !same(oldBuf, buf)) { changed.push(f); await c.put(f, res); }
+          } catch (e) { failed++; }
+          done++;
+        }));
+        say(`Checking… ${done} of ${files.length} files`);
+      }
+      if (changed.length) {
+        const data = changed.filter(f => f.startsWith('data/') && f !== 'data/manifest.js').length, prog = changed.length - data - (changed.includes('data/manifest.js') ? 1 : 0);
+        const parts = []; if (data) parts.push(data + ' army data file' + (data === 1 ? '' : 's')); if (prog) parts.push(prog + ' program file' + (prog === 1 ? '' : 's')); if (!parts.length) parts.push('the data list');
+        say(`✓ Downloaded ${parts.join(' and ')}. Reloading…`);
+        setTimeout(() => location.reload(), 1200);
+      } else say(failed ? `Up to date, but ${failed} file${failed === 1 ? '' : 's'} couldn't be checked – try again later.` : '✓ Everything is up to date.');
+    } catch (e) { say('Couldn\'t check for updates (' + esc(e.message) + ').'); }
+    if (btn) btn.disabled = false;
   }
 
   async function createRoster() {
@@ -1009,6 +1050,7 @@
       case 'dl-roster': { const r = Store.all()[el.dataset.id]; download(fileSafe(r.name) + '.roster.json', JSON.stringify(r, null, 1)); break; }
       case 'import-roster': $('#file-import').click(); break;
       case 'load-folder': $('#folder-import').click(); break;
+      case 'check-updates': checkUpdates(); break;
       case 'reset-data': await E.IDB.clear(); location.reload(); break;
 
       case 'show-add': S.mode = 'add'; S.selPath = null; S.ptab = el.closest('#col-mid') ? 'army' : 'add'; renderRoster(); phoneTop(); break;

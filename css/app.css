@@ -478,3 +478,5 @@ td.dmg, td.modded, td[title^="Changed"], .fd-icon, .ann, .mk[title], .dp-cost, .
   .sheet td.pname { white-space: normal; min-width: 96px; }
   .sheet td:last-child { white-space: normal; min-width: 130px; }
 }
+
+.upd-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }

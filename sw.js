@@ -2,7 +2,7 @@
  * Works when the program is opened from a web address (e.g. GitHub Pages), not from a file on disk.
  * - On first visit everything the program needs is saved on the device: the program, the user guide
  *   and all the army data listed in data/manifest.js.
- * - When online, files are always fetched fresh (so updates appear straight away) and the saved copy is
+ * - When online, files are always checked with the server (so updates appear straight away) and the saved copy is
  *   refreshed; when offline, the saved copy is used.
  */
 const CACHE = 'novalist-v1';
@@ -70,7 +70,9 @@ self.addEventListener('fetch', (ev) => {
   ev.respondWith((async () => {
     const c = await caches.open(CACHE);
     try {
-      const res = await fetch(req);
+      // always ask the server whether the file changed (cheap "not modified" reply when it hasn't),
+      // so the phone's browser cache can't hand back an old copy of the program or army data
+      const res = await (req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(new Request(req, { cache: 'no-cache' })));
       if (res.ok && res.type === 'basic') c.put(req, res.clone()).catch(() => {});
       return res;
     } catch (e) {
