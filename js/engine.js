@@ -247,7 +247,7 @@
   let GEN = 1;
   function bump() { GEN++; }
 
-  const FIX_LEVEL = 1;   // raise when upgradeRoster learns a new fix for lists saved by older versions
+  const FIX_LEVEL = 2;   // raise when upgradeRoster learns a new fix for lists saved by older versions
   class Roster {
     constructor(catalog, opts) {
       this.isRoster = true;
@@ -1339,6 +1339,50 @@
             }
           }
         } catch (e) { /* leave the unit as it is */ }
+        // 3) models stacked together that can't all share the same weapon (lists built before each model
+        //    could have its own loadout, e.g. "2x Neophyte Hybrid w/ Heavy Weapon" both with a Heavy stubber):
+        //    split them into separate loadouts using weapons that are still allowed
+        try {
+          const rootOfSel = (x) => { while (x && x.parent && !x.parent.isForce) x = x.parent; return x; };
+          const unitErrs = () => { bump(); return validate(roster).filter(e => e.sel && rootOfSel(e.sel) === u).length; };
+          const radios = (sel) => {
+            const out = [];
+            const walk = (list, gs) => list.forEach(o => {
+              if (o.kind !== 'group') return;
+              const g2 = gs.concat([o]);
+              const gv = makeVirtual(sel, o, gs);
+              if (ev(gv).hidden) return;
+              const opts = cat.children(o).filter(x => x.kind !== 'group' && !ev(makeVirtual(sel, x, g2)).hidden);
+              if (constraintValue(o, gv, 'max', ['parent']) === 1 && opts.length > 1) out.push({ g: o, gs: g2, opts });
+              walk(cat.children(o), g2);
+            });
+            walk(cat.children(sel.node), []);
+            return out;
+          };
+          let errs = unitErrs();
+          if (errs) {
+            const split = [];
+            const stacks = []; const find = (x) => x.children.forEach(c => { if (c.node.type === 'model' && c.number > 1 && radios(c).length) stacks.push(c); find(c); }); find(u);
+            for (const x of stacks) {
+              while (errs && x.number > 1) {
+                x.number--;
+                const n2 = addSel(x.parent, x.node, x.groups, 1);
+                let best = unitErrs();
+                for (const r of radios(n2)) {
+                  if (best < errs) break;
+                  for (const o of r.opts) {
+                    selsInGroup(n2, r.g).forEach(c => removeSel(c)); addSel(n2, o, r.gs, 1);
+                    const e2 = unitErrs();
+                    if (e2 < best) { best = e2; break; }
+                  }
+                }
+                if (best < errs) { errs = best; split.push(ev(n2).name + ' → ' + radios(n2).map(r => selsInGroup(n2, r.g).map(c => ev(c).name).join(', ')).join(', ')); }
+                else { removeSel(n2); x.number++; bump(); break; }
+              }
+            }
+            if (split.length) changes.push(`${uname}: gave ${split.length} model${split.length === 1 ? '' : 's'} a different weapon to keep within the limits (${split.join('; ')})`);
+          }
+        } catch (e) { /* ignore */ }
         // 2) required options the saved unit is missing (not models: unit sizes are the player's choice).
         //    Only for a unit the list check says is missing something, and only if adding it clears an issue.
         try {
