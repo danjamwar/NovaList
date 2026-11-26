@@ -247,6 +247,7 @@
   let GEN = 1;
   function bump() { GEN++; }
 
+  const FIX_LEVEL = 1;   // raise when upgradeRoster learns a new fix for lists saved by older versions
   class Roster {
     constructor(catalog, opts) {
       this.isRoster = true;
@@ -258,6 +259,8 @@
       this.forces = [];
       this.notes = opts.notes || '';
       this.dpOverride = opts.dpOverride !== undefined && opts.dpOverride !== null ? Number(opts.dpOverride) : null;
+      // which list fixes (upgradeRoster) this list has already been through; new lists need none
+      this.fx = opts.fx !== undefined ? Number(opts.fx) || 0 : FIX_LEVEL;
     }
     get children() { return [].concat(...this.forces.map(f => f.children)); }
   }
@@ -868,7 +871,19 @@
     bump();
     addDefaults(s);
     bump();
+    if (parent.isForce) settleDefaults(s);
     return s;
+  }
+  // Some required wargear depends on the rest of the unit (e.g. the Hesyr takes the same weapons as the
+  // Einhyr Hearthguard), so once the whole unit is in place go over it again for anything now required.
+  function settleDefaults(u) {
+    const count = () => { let n = 0; const w = (x) => x.children.forEach(c => { n++; w(c); }); w(u); return n; };
+    for (let pass = 0; pass < 3; pass++) {
+      const before = count();
+      const rec = (x) => { x.children.slice().forEach(c => { addDefaults(c); rec(c); }); };
+      rec(u); bump();
+      if (count() === before) break;
+    }
   }
 
   function removeSel(s) {
@@ -1244,7 +1259,7 @@
     };
     return {
       format: 'offline-list-builder/1', id: roster.id, name: roster.name, costLimit: roster.costLimit, notes: roster.notes,
-      dpOverride: roster.dpOverride,
+      dpOverride: roster.dpOverride, fx: roster.fx,
       gameSystemId: roster.catalog.sys.id, catalogueId: roster.catalogueId, catalogueName: roster.catalog.cats[0].name,
       updated: new Date().toISOString(),
       forces: roster.forces.map(f => ({ forceEntryId: f.node.id, sels: f.children.map(s => {
@@ -1269,8 +1284,108 @@
     return null;
   }
 
+  // ---- Bring a list saved by an older version up to date. Returns a description of each change.
+  // 1) units added while the default-size bug existed ("5 models incl. Sergeant" saved as 5 + Sergeant):
+  //    only when the unit is still exactly as that bug left it, and is paying for models it hasn't got
+  // 2) options the data now requires that the saved list doesn't have (wargear, not models)
+  function upgradeRoster(roster) {
+    const cat = roster.catalog; const changes = [];
+    for (const force of roster.forces) {
+      for (const u of force.children.slice()) {
+        if (u.node.type === 'upgrade') continue;
+        const uname = u.customName || ev(u).name;
+        // 1) oversized default units
+        try {
+          const z = unitSizesFor(cat, force.node.raw || force.node, u.node);
+          const before = modelsIn(u);
+          if (z && !z.sizes.includes(before)) {
+            const fixGroups = (P) => {
+              const walk = (list, gs) => list.forEach(g => {
+                if (g.kind !== 'group') return;
+                const g2 = gs.concat([g]);
+                const kids = cat.children(g).filter(k => k.kind !== 'group');
+                if (kids.some(k => k.type === 'model')) {
+                  const gv = makeVirtual(P, g, gs);
+                  const gmin = constraintValue(g, gv, 'min', ['parent']) || 0;
+                  let def = kids.find(k => k.id === g.defaultSelectionEntryId || k.key === g.defaultSelectionEntryId);
+                  if (!def) def = kids.find(k => !ev(makeVirtual(P, k, g2)).hidden);
+                  if (gmin > 0 && def && def.type === 'model') {
+                    const dsels = selsOf(P, def);
+                    const dmax = constraintValue(def, makeVirtual(P, def, g2), 'max', ['parent']);
+                    const others = kids.filter(k => k !== def).map(k => ({ k, min: constraintValue(k, makeVirtual(P, k, g2), 'min', ['parent']) || 0, n: selsOf(P, k).reduce((a, c) => a + c.number, 0) }));
+                    const inGroup = selsInGroup(P, g);
+                    const oldN = dmax !== undefined ? Math.min(gmin, dmax) : gmin;
+                    const otherMins = others.reduce((a, o) => a + o.min, 0);
+                    const asLeft = dsels.length === 1 && dsels[0].number === oldN && others.every(o => o.n === o.min) &&
+                      inGroup.every(x => x.node === def || others.some(o => o.k === x.node)) && oldN + otherMins > gmin;
+                    if (asLeft) {
+                      const dmin = constraintValue(def, dsels[0], 'min', ['parent']) || 0;
+                      const want = Math.max(gmin - otherMins, dmin, 1);
+                      if (want < oldN) dsels[0].number = want;
+                    }
+                  }
+                }
+                walk(cat.children(g), g2);
+              });
+              walk(cat.children(P.node), []);
+            };
+            const saved = []; const keep = (x) => { saved.push([x, x.number]); x.children.forEach(keep); }; keep(u);
+            fixGroups(u); u.children.forEach(c => { if (c.node.type !== 'model') fixGroups(c); });
+            bump();
+            const after = modelsIn(u);
+            if (after !== before) {
+              if (z.sizes.includes(after)) changes.push(`${uname}: ${before} → ${after} models (an older version added it one model too big)`);
+              else { saved.forEach(([x, n]) => { x.number = n; }); bump(); }   // not the old bug: leave it as it was
+            }
+          }
+        } catch (e) { /* leave the unit as it is */ }
+        // 2) required options the saved unit is missing (not models: unit sizes are the player's choice).
+        //    Only for a unit the list check says is missing something, and only if adding it clears an issue.
+        try {
+          const rootOfSel = (x) => { while (x && x.parent && !x.parent.isForce) x = x.parent; return x; };
+          const unitErrs = () => { bump(); return validate(roster).filter(e => e.sel && rootOfSel(e.sel) === u); };
+          let errsNow = unitErrs();
+          if (errsNow.some(e => /needs at least/.test(e.msg))) {
+            const added = [];
+            const cands = [];
+            const collect = (P) => {
+              const walk = (list, gs) => list.forEach(o => {
+                const v = makeVirtual(P, o, gs);
+                if (ev(v).hidden) return;
+                if (o.kind === 'group') {
+                  const kids = cat.children(o);
+                  walk(kids, gs.concat([o]));
+                  const min = constraintValue(o, v, 'min', ['parent']) || 0;
+                  if (min > 0 && !selsInGroup(P, o).length && !kids.some(k => k.type === 'model')) {
+                    let def = kids.find(k => k.kind === 'entry' && (k.id === o.defaultSelectionEntryId || k.key === o.defaultSelectionEntryId));
+                    if (!def) def = kids.find(k => k.kind === 'entry' && !ev(makeVirtual(P, k, gs.concat([o]))).hidden);
+                    if (def) cands.push({ P, node: def, groups: gs.concat([o]), n: min });
+                  }
+                } else if (o.type !== 'model') {
+                  const min = constraintValue(o, v, 'min', ['parent']) || 0;
+                  if (min > 0 && !selsOf(P, o).length) cands.push({ P, node: o, groups: gs, n: min });
+                }
+              });
+              walk(cat.children(P.node), []);
+            };
+            const rec = (P) => { collect(P); P.children.forEach(rec); };
+            rec(u);
+            for (const c of cands) {
+              const x = addSel(c.P, c.node, c.groups, c.n);
+              const after = unitErrs();
+              if (after.length < errsNow.length) { errsNow = after; added.push(c.node.name); }
+              else { removeSel(x); bump(); }
+            }
+            if (added.length) changes.push(`${uname}: added required ${[...new Set(added)].join(', ')}`);
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+    return changes;
+  }
+
   function deserialize(catalog, data) {
-    const roster = new Roster(catalog, { id: data.id, name: data.name, costLimit: data.costLimit, notes: data.notes, dpOverride: data.dpOverride });
+    const roster = new Roster(catalog, { id: data.id, name: data.name, costLimit: data.costLimit, notes: data.notes, dpOverride: data.dpOverride, fx: data.fx || 0 });
     const missing = [];
     for (const fd of data.forces || []) {
       const fe = catalog.forceEntries().find(f => f.id === fd.forceEntryId) || catalog.forceEntries()[0];
@@ -1312,7 +1427,7 @@
   global.Engine = {
     Data, IDB, Catalog, Roster, Force, Sel, openCatalog,
     ev, evInfo, validate, limitOverride, overrideActive, computeEffects, textOp, tidyChar, numericEdit, attachOptions, attachedTarget, attachedLeaders, canAttach, collectInfo, addSel, removeSel, addDefaults, forceDefaults, makeVirtual,
-    constraintValue, selsOf, selsInGroup, unitSizeNote, totalCost, forceCost, rosterCost, costOf, serialize, deserialize, bump,
+    constraintValue, selsOf, selsInGroup, unitSizeNote, upgradeRoster, FIX_LEVEL, totalCost, forceCost, rosterCost, costOf, serialize, deserialize, bump,
     get GEN() { return GEN; },
   };
 })(window);

@@ -297,7 +297,7 @@
       if (!E.Data.manifest.catalogues.find(c => c.id === data.catalogueId)) throw new Error('This roster uses a faction that is not in the current data (' + (data.catalogueName || data.catalogueId) + ').');
       const cat = await E.openCatalog(data.catalogueId);
       const { roster, missing } = E.deserialize(cat, data);
-      openRoster(cat, roster);
+      openRoster(cat, roster, true);
       if (missing.length) toast(missing.length + ' selection(s) no longer exist in the data and were dropped.', 6000);
     });
   }
@@ -309,11 +309,18 @@
     catch (e) { console.error(e); const o = $('.overlay'); if (o) o.remove(); toast('Error: ' + e.message, 8000); }
   }
 
-  function openRoster(cat, roster) {
+  function openRoster(cat, roster, saved) {
+    const needsFixes = saved && (roster.fx || 0) < E.FIX_LEVEL;
+    roster.fx = E.FIX_LEVEL;   // offered once: an Undo isn't redone the next time the list is opened
+    const before = JSON.stringify(E.serialize(roster));
     // lists saved before an option became "on by default" (e.g. Show Khorne Daemons) get it now
     try { roster.forces.forEach(f => E.forceDefaults(f)); E.bump(); } catch (e) { console.warn(e); }
+    // and fixes since the list was built (units added too big, newly required wargear)
+    let upgraded = [];
+    if (needsFixes) try { upgraded = E.upgradeRoster(roster); E.bump(); } catch (e) { console.warn(e); }
     S.catalog = cat; S.roster = roster; S.view = 'roster';
-    S.selPath = null; S.mode = 'add'; S.undo = []; S.redo = []; S.addFilter = ''; S.addCat = '';
+    S.selPath = null; S.mode = 'add'; S.undo = upgraded.length ? [before] : []; S.redo = []; S.addFilter = ''; S.addCat = '';
+    if (upgraded.length) setTimeout(() => toast(`Updated this list to match the latest fixes – ${upgraded.slice(0, 2).join('; ')}${upgraded.length > 2 ? ` and ${upgraded.length - 2} more` : ''}. Press Undo (↶) to put it back.`, 12000), 50);
     S.ptab = roster.forces.some(f => f.children.some(x => !isCfg(x))) ? 'army' : 'add'; S.tbMore = false;
     roster.forces.forEach(ensureShowHide);
     E.bump();
