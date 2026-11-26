@@ -990,16 +990,17 @@
   // ---- Unit sizes. A unit can only be taken at the sizes it has a points cost for. The data prices units
   // in tiers ("70 pts, or 135 pts if more than 10 models"), so the legal sizes are where the price steps up
   // plus the largest size. Worked out once per unit type on a scratch copy of the unit.
-  const SIZE_CACHE = new Map();
+  // remembered per catalogue object, so loading new data (a new Catalog) starts afresh
+  const sizeCache = (cat) => cat._sizes || (cat._sizes = new Map());
   function modelsIn(u) { let n = 0; const w = (x, m) => x.children.forEach(c => { const k = c.number * m; if (c.node.type === 'model') n += k; else w(c, k); }); w(u, 1); return n; }
   function unitSizesFor(cat, forceNode, node) {
-    const key = cat.cats[0].id + '|' + node.id;
-    if (SIZE_CACHE.has(key)) return SIZE_CACHE.get(key);
-    let res = null;
+    const key = node.id;
+    if (sizeCache(cat).has(key)) return sizeCache(cat).get(key);
+    let res = null; let u = null;
     try {
       if (!cat._sizeForce) { const r = new Roster(cat, {}); const f = new Force(r, forceNode); r.forces.push(f); cat._sizeForce = f; }
       const f = cat._sizeForce;
-      const u = addSel(f, node, [], 1); bump();
+      u = addSel(f, node, [], 1); bump();
       let b = null; const w = (x) => x.children.forEach(c => { if (c.node.type === 'model') { if (!b || c.number > b.number) b = c; } else w(c); }); w(u);
       if (b) {
         const g = b.groups[b.groups.length - 1];
@@ -1018,9 +1019,9 @@
           if (distinct >= 2 && distinct < pr.length) res = { min: pr[0][0], max: pr[pr.length - 1][0], sizes: pr.filter((x, i) => i === pr.length - 1 || pr[i + 1][1] !== x[1]).map(x => x[0]) };
         }
       }
-      removeSel(u); bump();
     } catch (e) { res = null; }
-    SIZE_CACHE.set(key, res);
+    finally { if (u) { try { removeSel(u); } catch (e) { /* ignore */ } bump(); } }
+    sizeCache(cat).set(key, res);
     return res;
   }
   // Units priced in bands ("5 models 85 pts, 10 models 170 pts") may have any number of models in between,
@@ -1030,7 +1031,7 @@
     const cat = rosterOf(s).catalog;
     const f = s.force;
     // sizes are worked out (on a scratch copy) when the list is checked; never during drawing
-    const z = SIZE_CACHE.get(cat.cats[0].id + '|' + s.node.id);
+    const z = sizeCache(cat).get(s.node.id);
     if (!z) return null;
     const n = modelsIn(s);
     if (n < z.min || n > z.max || z.sizes.includes(n)) return null;
@@ -1041,7 +1042,7 @@
   function validate(roster) {
     // work out unit sizes first: it uses a scratch copy, so do it before anything is cached for this check
     for (const force of roster.forces) for (const s of force.children) {
-      if (!s.virtual && s.node.type !== 'upgrade' && !SIZE_CACHE.has(roster.catalog.cats[0].id + '|' + s.node.id)) unitSizesFor(roster.catalog, force.node.raw || force.node, s.node);
+      if (!s.virtual && s.node.type !== 'upgrade' && !sizeCache(roster.catalog).has(s.node.id)) unitSizesFor(roster.catalog, force.node.raw || force.node, s.node);
     }
     const errs = []; const seen = new Set();
     const push = (msg, s) => { const k = msg + '|' + (s ? s.uid : ''); if (seen.has(k)) return; seen.add(k); errs.push({ msg, sel: s }); };
