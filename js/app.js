@@ -503,6 +503,8 @@
       <button class="btn sm" data-act="show-add">Done</button></div></div>`;
     const errs = (S._errs || []).filter(x => x.sel && rootOf(x.sel) === root);
     if (errs.length) html += `<div class="unit-errs">${errs.map(x => `<div>⚠ ${esc(x.msg)}</div>`).join('')}</div>`;
+    const sz = !cfg && E.unitSizeNote && E.unitSizeNote(root);
+    if (sz) html += `<div class="unit-note">ℹ ${sz.n} models costs the same as ${sz.top} – you can add ${sz.spare} more model${sz.spare === 1 ? '' : 's'} for no extra points. <span class="muted">(Points are listed for ${sz.sizes.join(' / ')} models; in between you pay for the next size up.)</span></div>`;
     if (e.annotations.length) html += `<div class="muted small">${esc(e.annotations.join(', '))}</div>`;
     html += renderAttach(root);
     html += `<div class="opts">${renderOptions(root, S.catalog.children(root.node), [], 0)}</div>`;
@@ -636,12 +638,31 @@
     if (s) {
       const kids = cat.children(s.node);
       if (kids.length) {
-        const inner = renderOptions(s, kids, [], depth + 1);
-        if (inner.trim()) html += `<div class="sub">${inner}</div>`;
+        if (sels.length > 1) {
+          // the same model with different loadouts: show each loadout with its own count
+          sels.forEach((x, i) => {
+            const inner = renderOptions(x, kids, [], depth + 2);
+            const ctl = `<span class="spin sm"><button data-act="sel-dec" data-uid="${x.uid}">−</button><input class="num" value="${x.number}" readonly tabindex="-1"><button data-act="sel-inc" data-uid="${x.uid}" ${max !== undefined && n >= max ? 'disabled' : ''}>+</button></span>`;
+            html += `<div class="sub loadout"><div class="loadout-head" style="--d:${depth + 1}">${ctl}<span class="muted small">Loadout ${i + 1}: ${esc(loadoutSummary(x))}</span>${splitBtn(x)}</div>${inner.trim() ? `<div class="sub">${inner}</div>` : ''}</div>`;
+          });
+        } else {
+          const inner = renderOptions(s, kids, [], depth + 1);
+          const sb = splitBtn(s);
+          if (sb) html += `<div class="loadout-head" style="--d:${depth + 1}">${sb}</div>`;
+          if (inner.trim()) html += `<div class="sub">${inner}</div>`;
+        }
       }
     }
     html += '</div>';
     return html;
+  }
+  function splitBtn(x) {
+    return x.number > 1 && x.node.type === 'model' && radioGroupsOf(x).length ? `<button class="btn xs" data-act="sel-split" data-uid="${x.uid}" title="Take one of these models out of the group so it can have different wargear">Split one off</button>` : '';
+  }
+  function loadoutSummary(sel) {
+    const picks = radioGroupsOf(sel).map(r => E.selsInGroup(sel, r.g).map(x => E.ev(x).name).join(', ')).filter(Boolean);
+    if (picks.length) return picks.join(' · ');
+    return sel.children.map(x => E.ev(x).name).join(', ');
   }
 
   // Rule / ability text attached to an option (detachments, enhancements, wargear abilities)
@@ -729,11 +750,116 @@
   function setOptionCount(o, n) {
     const { P, node, groups } = o;
     const sels = E.selsOf(P, node);
+    const cur = sels.reduce((a, c) => a + c.number, 0);
     beginChange();
     if (n <= 0) sels.forEach(s => E.removeSel(s));
-    else if (sels.length) { sels[0].number = n; sels.slice(1).forEach(s => E.removeSel(s)); E.bump(); }
-    else E.addSel(P, node, groups, n);
+    else if (n > cur) addCopies(P, node, groups, n - cur);
+    else if (n < cur) dropCopies(sels, cur - n);
     commit();
+  }
+
+  // --- models that carry their own choice of wargear (e.g. "Neophyte Hybrid w/ Heavy Weapon")
+  // A selection holds `number` identical models. When another model is added and it can't share
+  // the same loadout (it would break a limit such as "max 1 Heavy stubber per 10 models"), it is
+  // added as its own selection with the first loadout that is still allowed, so each model can
+  // have a different weapon.
+  const errCount = () => { E.bump(); return E.validate(S.roster).length; };
+  function radioGroupsOf(sel) {
+    const out = [];
+    const walk = (list, gs) => list.forEach(o => {
+      if (o.kind !== 'group') return;
+      const g2 = gs.concat([o]);
+      const gv = E.makeVirtual(sel, o, gs);
+      if (E.ev(gv).hidden) return;
+      const opts = S.catalog.children(o).filter(x => x.kind !== 'group' && !E.ev(E.makeVirtual(sel, x, g2)).hidden);
+      if (E.constraintValue(o, gv, 'max', ['parent']) === 1 && opts.length > 1) out.push({ g: o, gs: g2, opts });
+      walk(S.catalog.children(o), g2);
+    });
+    walk(S.catalog.children(sel.node), []);
+    return out;
+  }
+  function pickAllowedLoadout(sel, base) {
+    for (const r of radioGroupsOf(sel)) {
+      if (errCount() <= base) return;
+      const keep = E.selsInGroup(sel, r.g).map(x => x.node);
+      let ok = false;
+      for (const o of r.opts) {
+        E.selsInGroup(sel, r.g).forEach(x => E.removeSel(x)); E.addSel(sel, o, r.gs, 1);
+        if (errCount() <= base) { ok = true; break; }
+      }
+      if (!ok) { // nothing better – put the original choice back
+        E.selsInGroup(sel, r.g).forEach(x => E.removeSel(x));
+        keep.forEach(k => E.addSel(sel, k, r.gs, 1));
+      }
+    }
+    E.bump();
+  }
+  // Same model with different wargear: entries in the same group whose Unit profile is the same
+  // model (e.g. "Neophyte Hybrid w/ Hybrid Firearm" and "Neophyte Hybrid w/ Heavy Weapon").
+  function modelName(P, node, groups) {
+    if (node.type !== 'model') return null;
+    const s = E.selsOf(P, node)[0] || E.makeVirtual(P, node, groups);
+    const u = E.collectInfo(s, false).profiles.find(p => p.typeName === 'Unit');
+    return u ? u.name : null;
+  }
+  function swapPartner(P, node, groups, dir) {
+    const grp = groups[groups.length - 1];
+    if (!grp || node.type !== 'model') return null;
+    const me = modelName(P, node, groups); if (!me) return null;
+    // a full group (e.g. "4 Havocs") must swap; otherwise only swap with a "basic" model that has its own minimum
+    const gv = E.makeVirtual(P, grp, groups.slice(0, -1));
+    const gmax = E.constraintValue(grp, gv, 'max', ['parent']);
+    const full = gmax !== undefined && E.selsInGroup(P, grp).reduce((a, c) => a + c.number, 0) >= gmax;
+    let best = null;
+    for (const o of S.catalog.children(grp)) {
+      if (o === node || o.kind === 'group' || o.type !== 'model' || modelName(P, o, groups) !== me) continue;
+      const sels = E.selsOf(P, o); const n = sels.reduce((a, c) => a + c.number, 0);
+      const v = sels[0] || E.makeVirtual(P, o, groups);
+      const min = E.constraintValue(o, v, 'min', ['parent']) || 0;
+      if (dir < 0) { if (n > min && (min > 0 || full) && (!best || n > best.n)) best = { o, n, sels }; }
+      else { const max = E.constraintValue(o, v, 'max', ['parent']); if (min > 0 && n > 0 && (max === undefined || n < max) && (!best || n > best.n)) best = { o, n, sels }; }
+    }
+    // only trade with the "plain" model – the one there are more of than the model being changed
+    const mine = E.selsOf(P, node).reduce((a, c) => a + c.number, 0);
+    return best && best.n > mine ? best : null;
+  }
+  function addCopies(P, node, groups, k) {
+    for (let i = 0; i < k; i++) {
+      const base = errCount();
+      const partner = swapPartner(P, node, groups, -1);   // replace one of the plain models
+      if (partner) dropCopies(partner.sels, 1, true);
+      const sels = E.selsOf(P, node);
+      const last = sels[sels.length - 1];
+      if (!last) { const s = E.addSel(P, node, groups, 1); if (radioGroupsOf(s).length) pickAllowedLoadout(s, base); continue; }
+      last.number++;
+      if (errCount() > base && radioGroupsOf(last).length) {
+        last.number--;
+        const s = E.addSel(P, node, groups, 1);
+        pickAllowedLoadout(s, base);
+        // no loadout helps (the limit is on the number of these models, not their weapons): keep them together
+        if (errCount() > base) { E.removeSel(s); last.number++; }
+      }
+    }
+    mergeSame(P, node);
+  }
+  // models of the same kind with exactly the same wargear go back into one stack
+  function loadoutKey(sel) { return sel.children.map(c => c.node.id + '*' + c.number + '(' + loadoutKey(c) + ')').sort().join(','); }
+  function mergeSame(P, node) {
+    const sels = E.selsOf(P, node); const seen = new Map();
+    for (const x of sels) {
+      const k = loadoutKey(x);
+      if (seen.has(k)) { seen.get(k).number += x.number; E.removeSel(x); } else seen.set(k, x);
+    }
+    E.bump();
+  }
+  function dropCopies(sels, k, noSwap) {
+    for (let i = 0; i < k; i++) {
+      const s = sels.filter(x => x.number > 0 && x.parent && x.parent.children.includes(x)).pop(); if (!s) break;
+      const back = noSwap ? null : swapPartner(s.parent, s.node, s.groups, +1);
+      if (s.number > 1) s.number--; else E.removeSel(s);
+      if (back) { const bs = back.sels[back.sels.length - 1]; bs.number++; }
+      E.bump();
+    }
   }
 
   function chooseRadio(o) {
@@ -1128,6 +1254,34 @@
         if (el.dataset.auto === '1') { S.infoOpen.has('x' + id) ? S.infoOpen.delete('x' + id) : S.infoOpen.add('x' + id); }
         else { S.infoOpen.has(id) ? S.infoOpen.delete(id) : S.infoOpen.add(id); }
         renderRoster(); break;
+      }
+      case 'sel-inc': case 'sel-dec': {
+        ev.preventDefault();
+        const x = findByUid(el.dataset.uid); if (!x) return;
+        beginChange();
+        if (act === 'sel-inc') {
+          // one more with this exact loadout, taken from the plain models where the rules say "replace"
+          const partner = swapPartner(x.parent, x.node, x.groups, -1);
+          if (partner) dropCopies(partner.sels, 1, true);
+          x.number++; E.bump();
+        } else dropCopies([x], 1);
+        commit(); break;
+      }
+      case 'sel-split': {
+        ev.preventDefault();
+        const x = findByUid(el.dataset.uid); if (!x || x.number < 2) return;
+        beginChange();
+        const base = errCount();
+        x.number--;
+        const n2 = E.addSel(x.parent, x.node, x.groups, 1);
+        // copy the current choices, then the user changes whichever they like
+        for (const r of radioGroupsOf(x)) {
+          const pick = E.selsInGroup(x, r.g).map(c => c.node);
+          if (!pick.length) continue;
+          E.selsInGroup(n2, r.g).forEach(c => E.removeSel(c)); pick.forEach(nd => E.addSel(n2, nd, r.gs, 1));
+        }
+        E.bump(); if (errCount() > base) pickAllowedLoadout(n2, base);
+        commit(); break;
       }
       case 'opt-radio': { ev.preventDefault(); const o = findOptById(el.dataset.id); if (o) chooseRadio(o); break; }
       case 'opt-inc': case 'opt-dec': {

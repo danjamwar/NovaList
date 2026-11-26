@@ -480,3 +480,9 @@ td.dmg, td.modded, td[title^="Changed"], .fd-icon, .ann, .mk[title], .dp-cost, .
 }
 
 .upd-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.loadout { border-left: 2px solid var(--line, #333); margin: 4px 0 6px calc(var(--d, 0) * 0px + 18px); padding-left: 8px; }
+.loadout-head { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.spin.sm .num { width: 30px; }
+.btn.xs { padding: 2px 8px; font-size: 12px; }
+.unit-note { background: #1f2630; border: 1px solid #34465c; border-radius: 6px; padding: 8px 10px; margin: 8px 0; font-size: 13px; color: #cfe0f5; }
+.unit-note .muted { font-size: 12px; }

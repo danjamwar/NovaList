@@ -901,8 +901,11 @@
         if (ev(v).hidden) continue;
         if (opt.kind === 'group') {
           const min = constraintValue(opt, v, 'min', ['parent']) || 0;
-          const existing = selsInGroup(P, opt).reduce((a, c) => a + c.number, 0);
           const kids = cat.children(opt);
+          // entries with their own minimum first (e.g. the one Sergeant), then top the group up to its
+          // minimum with the default choice – so "5 models incl. Sergeant" doesn't become 5 + Sergeant
+          walk(kids, groups.concat([opt]));
+          const existing = selsInGroup(P, opt).reduce((a, c) => a + c.number, 0);
           if (min > 0 && existing < min) {
             let def = kids.find(k => k.kind === 'entry' && (k.id === opt.defaultSelectionEntryId || k.key === opt.defaultSelectionEntryId));
             if (!def) def = kids.find(k => k.kind === 'entry' && !ev(makeVirtual(P, k, groups.concat([opt]))).hidden);
@@ -911,10 +914,9 @@
               const dmax = constraintValue(def, dv, 'max', ['parent']);
               let n = min - existing;
               if (dmax !== undefined) n = Math.min(n, dmax);
-              if (n > 0) addSel(P, def, groups.concat([opt]), n);
+              if (n > 0) { const ex = selsOf(P, def)[0]; if (ex) { ex.number += n; bump(); } else addSel(P, def, groups.concat([opt]), n); }
             }
           }
-          walk(kids, groups.concat([opt]));
         } else {
           // (optional defaults only outside option groups – inside a group the group's own default choice applies)
           const min = constraintValue(opt, v, 'min', ['parent']) || (groups.length ? 0 : optionalDefault(opt)) || 0;
@@ -970,7 +972,62 @@
     return overrideActive(roster) ? roster.dpOverride : null;
   }
 
+  // ---- Unit sizes. A unit can only be taken at the sizes it has a points cost for. The data prices units
+  // in tiers ("70 pts, or 135 pts if more than 10 models"), so the legal sizes are where the price steps up
+  // plus the largest size. Worked out once per unit type on a scratch copy of the unit.
+  const SIZE_CACHE = new Map();
+  function modelsIn(u) { let n = 0; const w = (x, m) => x.children.forEach(c => { const k = c.number * m; if (c.node.type === 'model') n += k; else w(c, k); }); w(u, 1); return n; }
+  function unitSizesFor(cat, forceNode, node) {
+    const key = cat.cats[0].id + '|' + node.id;
+    if (SIZE_CACHE.has(key)) return SIZE_CACHE.get(key);
+    let res = null;
+    try {
+      if (!cat._sizeForce) { const r = new Roster(cat, {}); const f = new Force(r, forceNode); r.forces.push(f); cat._sizeForce = f; }
+      const f = cat._sizeForce;
+      const u = addSel(f, node, [], 1); bump();
+      let b = null; const w = (x) => x.children.forEach(c => { if (c.node.type === 'model') { if (!b || c.number > b.number) b = c; } else w(c); }); w(u);
+      if (b) {
+        const g = b.groups[b.groups.length - 1];
+        const gv = g ? makeVirtual(b.parent, g, b.groups.slice(0, -1)) : null;
+        const inGroup = g ? selsInGroup(b.parent, g).filter(x => x !== b).reduce((a, c) => a + c.number, 0) : 0;
+        const bmax = constraintValue(b.node, b, 'max', ['parent']), gmax = g ? constraintValue(g, gv, 'max', ['parent']) : undefined;
+        const bmin = constraintValue(b.node, b, 'min', ['parent']) || 0, gmin = g ? constraintValue(g, gv, 'min', ['parent']) || 0 : 0;
+        let hi = bmax === undefined ? 99 : bmax; if (gmax !== undefined) hi = Math.min(hi, gmax - inGroup);
+        const lo = Math.max(bmin, gmin - inGroup, 1);
+        if (hi > lo && hi <= 60) {
+          const orig = b.number, pr = [];
+          for (let k = lo; k <= hi; k++) { b.number = k; bump(); pr.push([modelsIn(u), costOf(u, cat.ptsType)]); }
+          b.number = orig;
+          const distinct = new Set(pr.map(x => x[1])).size;
+          // a price that changes with every model (cost per model) means any size is fine
+          if (distinct >= 2 && distinct < pr.length) res = { min: pr[0][0], max: pr[pr.length - 1][0], sizes: pr.filter((x, i) => i === pr.length - 1 || pr[i + 1][1] !== x[1]).map(x => x[0]) };
+        }
+      }
+      removeSel(u); bump();
+    } catch (e) { res = null; }
+    SIZE_CACHE.set(key, res);
+    return res;
+  }
+  // Units priced in bands ("5 models 85 pts, 10 models 170 pts") may have any number of models in between,
+  // but pay for the top of the band. This tells the list builder when a unit is paying for models it hasn't got.
+  function unitSizeNote(s) {
+    if (!s || s.node.type === 'upgrade' || !s.force) return null;
+    const cat = rosterOf(s).catalog;
+    const f = s.force;
+    // sizes are worked out (on a scratch copy) when the list is checked; never during drawing
+    const z = SIZE_CACHE.get(cat.cats[0].id + '|' + s.node.id);
+    if (!z) return null;
+    const n = modelsIn(s);
+    if (n < z.min || n > z.max || z.sizes.includes(n)) return null;
+    const top = z.sizes.find(x => x > n);
+    return top ? { n, top, spare: top - n, sizes: z.sizes } : null;
+  }
+
   function validate(roster) {
+    // work out unit sizes first: it uses a scratch copy, so do it before anything is cached for this check
+    for (const force of roster.forces) for (const s of force.children) {
+      if (!s.virtual && s.node.type !== 'upgrade' && !SIZE_CACHE.has(roster.catalog.cats[0].id + '|' + s.node.id)) unitSizesFor(roster.catalog, force.node.raw || force.node, s.node);
+    }
     const errs = []; const seen = new Set();
     const push = (msg, s) => { const k = msg + '|' + (s ? s.uid : ''); if (seen.has(k)) return; seen.add(k); errs.push({ msg, sel: s }); };
     const cat = roster.catalog;
@@ -1255,7 +1312,7 @@
   global.Engine = {
     Data, IDB, Catalog, Roster, Force, Sel, openCatalog,
     ev, evInfo, validate, limitOverride, overrideActive, computeEffects, textOp, tidyChar, numericEdit, attachOptions, attachedTarget, attachedLeaders, canAttach, collectInfo, addSel, removeSel, addDefaults, forceDefaults, makeVirtual,
-    constraintValue, selsOf, selsInGroup, totalCost, forceCost, rosterCost, costOf, serialize, deserialize, bump,
+    constraintValue, selsOf, selsInGroup, unitSizeNote, totalCost, forceCost, rosterCost, costOf, serialize, deserialize, bump,
     get GEN() { return GEN; },
   };
 })(window);

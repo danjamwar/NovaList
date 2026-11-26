@@ -519,6 +519,15 @@
       }
     }
     for (const ml of named) {
+      // the same model listed again with different wargear ("1x Neophyte Hybrid w/ Heavy Weapon" twice):
+      // it gets its own selection so each can carry its own weapons
+      const again = [...used].find(x => norm(E.ev(x).name) === norm(ml.name));
+      const other = again && locate(cat, unit, ml.name, 'model', null, null, used);
+      if (again && !(other && norm(E.ev(E.makeVirtual(other.P, other.opt.node, other.opt.groups)).name) === norm(ml.name))) {
+        const per = Math.max(1, Math.round(ml.count / multiplier(again.parent)));
+        const ms = E.addSel(again.parent, again.node, again.groups, per); E.bump();
+        used.add(ms); ml.sel = ms; continue;
+      }
       const hit = locate(cat, unit, ml.name, 'model', null, null, used);
       if (!hit) {
         if (ml.items.length) { ml.unresolved = true; continue; }   // model named differently: matched by its wargear below
@@ -569,9 +578,10 @@
         for (const g of unnamed) {
           let best = null, bestScore = -1;
           for (const mo of modelOpts) {
-            if (assigned.has(mo.o.node)) continue;
             if (g._pref && mo !== g._pref) continue;
             let sc = score(mo.o.node, g.items) * 10;
+            // a model type already used can be used again (same model, different weapons) only on a wargear match
+            if (assigned.has(mo.o.node)) { if (sc < 10) continue; sc -= 8; }
             if (g._avoid && score(mo.o.node, g._avoid.map(n => ({ name: n }))) ) sc -= 5;
             const ex = E.selsOf(mo.P, mo.o.node)[0];
             if (ex && ex.number * multiplier(mo.P) === g.count) sc += 3;
@@ -580,9 +590,10 @@
           }
           if (!best) { g.items.forEach(i => u.items.push(Object.assign({}, i, { perModelOf: g.count }))); continue; }
           if (g.name) report.notes.push(`“${g.name}” matched to the model “${best.o.node.name}” by its wargear`);
+          const reuse = assigned.has(best.o.node);
           assigned.add(best.o.node);
           const per = Math.max(1, Math.round(g.count / multiplier(best.P)));
-          const ms = choose(cat, best.P, best.o, per); ms.number = per; E.bump();
+          const ms = reuse ? E.addSel(best.P, best.o.node, best.o.groups, per) : choose(cat, best.P, best.o, per); ms.number = per; E.bump();
           used.add(ms);
           for (const it of g.items) {
             const hit = locate(cat, unit, it.name, 'item', ms, listed);

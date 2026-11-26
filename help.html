@@ -249,6 +249,13 @@ th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
   <li>When you pick a <b>detachment</b> or an <b>enhancement</b>, its rules appear underneath it automatically.</li>
   <li>The <b>×11</b> next to weapons means “one each for all 11 models”.</li>
 </ul>
+<h4>Models with their own weapon choice</h4>
+<p>Some units have special models that swap a basic weapon for something else, such as Neophyte Hybrids. The basic model is “Neophyte Hybrid w/ Hybrid Firearm”, and the special models are “w/ Heavy Weapon” and “w/ Special Weapon”.</p>
+<ul>
+  <li>Pressing <span class="ui">+</span> on a special model <b>replaces</b> one of the basic models, so the unit stays the same size. This happens when the basic model has its own minimum, or the group is already full. Pressing <span class="ui">−</span> gives the model back. To make the unit bigger, press <span class="ui">+</span> on the basic model.</li>
+  <li>If the new model can't have the same weapon as the others, it's added as a separate <b>Loadout</b> with the first weapon that's still allowed. For example, “up to 1 Heavy stubber per 10 models” means the second Heavy Weapon model gets a Mining laser. Each loadout has its own weapon choice and its own <span class="ui">− +</span> counter.</li>
+  <li>When several models share one loadout, <span class="ui">Split one off</span> moves one of them into its own loadout so you can give it a different weapon.</li>
+</ul>
 <p>Click <span class="ui">Done</span> (or <span class="ui gold">＋ Add unit</span>) when you've finished with a unit.</p>
 
 <h3 id="leaders">Attaching Leaders</h3>
@@ -280,6 +287,7 @@ th { color: var(--muted); font-weight: 600; font-size: 13.5px; }
   <li><span class="ui green">✓ Valid</span> when everything is fine, or <span class="ui" style="color:#ffb3ae;border-color:#e0574f">⚠ 1 issue</span> when there's a problem. Click it to see the list of issues; click an issue to jump to the unit. Units with problems have a red edge on the left, and the problem is also shown at the top of the unit's options.</li>
 </ul>
 <p>Things that are checked include: points limit, minimum and maximum unit sizes and wargear, how many of each unit you can take for your battle size (e.g. 2 of each in Incursion, 3 in Strike Force, double for Battleline and Dedicated Transports, 1 of each Epic Hero), unique characters, that you've chosen a Warlord, Detachment Points, enhancement limits (including only one per attached unit) and Leader attachments.</p>
+<p><b>Sizes between the listed points.</b> Many units have points for set sizes, e.g. Neophyte Hybrids are 70 pts for 10 models and 135 pts for 20. You may take any number in between, but you pay for the next size up. That's allowed, so it isn't an issue. Instead, a blue <span class="ui">ℹ</span> note at the top of the unit tells you, e.g. “12 models costs the same as 20 – you can add 8 more models for no extra points”.</p>
 
 <h3 id="datasheets">Datasheets &amp; gold values</h3>
 <p>The right-hand column shows the selected unit's datasheet: its stats, weapons (with how many of each), abilities, rules (click a rule name to read it), keywords and what it's attached to.</p>
